@@ -4,19 +4,19 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Executing Phase 1 plans. Plans 01-07 complete (rate limiter, schemas, domain skill, API client, listing tools, price/override tools, remaining tools).
+**Current Focus:** Phase 1 COMPLETE. All 9 plans executed, all 13 MCP tools registered, E2E verification passed. Ready for Phase 2.
 
 ## Current Position
 
 **Milestone:** v1
 **Phase:** 1 - MCP Server Foundation + Infrastructure Security
-**Plan:** 7 of 9
-**Status:** In Progress
+**Plan:** 9 of 9
+**Status:** COMPLETE
 
 **Progress:**
 ```
-Phase 1 [#######...] 78%  <- YOU ARE HERE
-Phase 2 [..........] 0%
+Phase 1 [##########] 100%  <- COMPLETE
+Phase 2 [..........] 0%   <- NEXT
 Phase 3 [..........] 0%
 Phase 4 [..........] 0%
 Phase 5 [..........] 0%
@@ -26,19 +26,22 @@ Phase 5 [..........] 0%
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 7 |
+| Plans completed | 9 |
 | Plans failed | 0 |
-| Requirements delivered | 0/43 |
-| Phases completed | 0/5 |
+| Requirements delivered | 6/43 (INFRA-01 through INFRA-06) |
+| Phases completed | 1/5 |
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
+| 01 | 01 | 10min | 3 | 5 |
 | 01 | 02 | 4min | 2 | 8 |
 | 01 | 03 | 5min | 1 | 1 |
 | 01 | 04 | 4min | 2 | 2 |
 | 01 | 05 | 8min | 2 | 1 |
 | 01 | 06 | 8min | 2 | 2 |
 | 01 | 07 | 11min | 2 | 5 |
+| 01 | 08 | 5min | 2 | 2 |
+| 01 | 09 | 2min | 0 | 0 |
 
 ## Accumulated Context
 
@@ -63,10 +66,13 @@ Phase 5 [..........] 0%
 | Status tool serverStartTime at module level | 01-07 | Module-level timestamp captures when the server module loads, giving accurate uptime without passing start time as parameter |
 | add_listing uses z.literal("bookingsync") | 01-07 | Enforces PMS restriction at schema level rather than runtime check; TypeScript compiler catches invalid values |
 | Neighborhood computed fields skip when listing not cached | 01-07 | Avoids burning a rate limit token just for computed field enrichment; returns null for price_percentile_position instead |
+| Top-level await for server startup | 01-08 | ES2022 + NodeNext supports it natively -- no wrapper function needed |
+| Deny-by-default tool policy in OpenClaw | 01-08 | Gateway blocks exec, write, edit, automation, runtime, process -- agent can only use MCP tools and read |
 
 ### Lessons Learned
 
-(None yet)
+- Background executor agents sometimes hit turn limits on complex plans -- orchestrator should be prepared to complete remaining work (summaries, state updates)
+- Escaped exclamation marks (\!) in shell-generated TypeScript files cause parse errors -- sed fix needed when detected
 
 ### Accumulated TODOs
 
@@ -81,11 +87,11 @@ Phase 5 [..........] 0%
 
 ## Session Continuity
 
-**Last Session:** 2026-02-22T21:09:00Z
-**Stopped At:** Completed 01-07-PLAN.md
-**What Happened:** Completed remaining tools plan (01-07). Registered 6 tools across 5 files: get_neighborhood (24hr cache, competitive positioning computed field), get_reservations (60min cache, pagination), get_rate_plans (6hr cache, pms_name param), push_prices (destructive, reason required), add_listing (BookingSync only via z.literal, reason required), get_api_status (internal state only, zero API calls). Zero deviations.
-**Next Action:** Execute next available plan in Phase 1 (01-08)
+**Last Session:** 2026-02-22T21:20:00Z
+**Stopped At:** Completed Phase 1 execution (all 9 plans, all 5 waves)
+**What Happened:** Executed Phase 1 across 5 waves with parallel agents. Wave 1: scaffold (01-01), schemas (01-02), domain skill (01-03) in parallel. Wave 2: API client (01-04). Wave 3: listing tools (01-05), price/override tools (01-06), remaining tools (01-07) in parallel. Wave 4: server entry point (01-08). Wave 5: E2E verification (01-09). All 13 MCP tools registered, TypeScript compiles, security verified. 6/43 requirements delivered (INFRA-01 through INFRA-06).
+**Next Action:** Plan and execute Phase 2 (Monitoring + Persistence + Interactive Queries + Channel Delivery)
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-22T21:09:00Z*
+*Last updated: 2026-02-22T21:20:00Z*
