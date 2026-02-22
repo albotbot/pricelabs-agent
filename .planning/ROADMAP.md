@@ -17,6 +17,19 @@ This roadmap delivers an AI revenue management agent in 5 phases, progressing fr
 
 **Dependencies:** None (foundation phase)
 
+**Plans:** 9 plans
+
+Plans:
+- [ ] 01-01-PLAN.md -- Project scaffold + rate limiter + cache + error types
+- [ ] 01-02-PLAN.md -- Zod schemas + TypeScript types + computed fields
+- [ ] 01-03-PLAN.md -- Domain knowledge skill (always-on PriceLabs expertise)
+- [ ] 01-04-PLAN.md -- PriceLabs API client with retry and fallback
+- [ ] 01-05-PLAN.md -- Listing tools (get_listings, get_listing, update_listings)
+- [ ] 01-06-PLAN.md -- Price + override tools with DSO safety validation
+- [ ] 01-07-PLAN.md -- Remaining tools (neighborhood, reservations, rate plans, sync, status)
+- [ ] 01-08-PLAN.md -- Server entry point + OpenClaw Gateway security config
+- [ ] 01-09-PLAN.md -- End-to-end verification checkpoint
+
 **Requirements:**
 - INFRA-01: MCP server wraps all 12 PriceLabs Customer API endpoints as typed tools with Zod validation
 - INFRA-02: MCP server enforces rate limiting (1000 req/hr) with token bucket algorithm
@@ -141,7 +154,7 @@ This roadmap delivers an AI revenue management agent in 5 phases, progressing fr
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | MCP Server Foundation + Infrastructure Security | 6 | Not Started |
+| 1 | MCP Server Foundation + Infrastructure Security | 6 | Planned (9 plans) |
 | 2 | Monitoring + Persistence + Interactive + Delivery | 17 | Not Started |
 | 3 | Analysis Layer + Smart Alerting | 6 | Not Started |
 | 4 | Write Operations + Approval Workflow | 10 | Not Started |
