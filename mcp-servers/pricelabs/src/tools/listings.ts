@@ -1,24 +1,27 @@
 /**
- * Listing MCP tools: get_listings, get_listing.
+ * Listing MCP tools: get_listings, get_listing, update_listings.
  *
  * Core data access layer for portfolio monitoring. Listings are the most
  * frequently accessed resource -- daily health checks, interactive queries,
  * and all downstream analysis starts here.
  *
  * Read tools use fetchWithFallback with 60-minute cache and computed fields.
+ * Write tool bypasses cache, requires reason parameter for audit trail,
+ * and invalidates all listing cache entries on success.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PriceLabsApiClient } from "../services/api-client.js";
 import type { TtlCache } from "../services/cache.js";
 import type { TokenBucketRateLimiter } from "../services/rate-limiter.js";
-import type { Listing } from "../types.js";
+import type { Listing, ToolResponse } from "../types.js";
 import { fetchWithFallback } from "../services/fetch-with-fallback.js";
 import { computeListingFields } from "../computed-fields.js";
 import { RateLimitError, AuthError, ApiError } from "../errors.js";
 import {
   GetListingsInputSchema,
   GetListingInputSchema,
+  UpdateListingsInputSchema,
 } from "../schemas/listings.js";
 
 // --- Constants ---
@@ -26,11 +29,12 @@ import {
 const LISTING_CACHE_TTL_MS = 3_600_000; // 60 minutes
 
 /**
- * Register listing MCP tools on the server.
+ * Register all listing MCP tools on the server.
  *
  * Tools registered:
  * - pricelabs_get_listings (read, cached)
  * - pricelabs_get_listing (read, cached)
+ * - pricelabs_update_listings (write, destructive, audit trail)
  */
 export function registerListingTools(
   server: McpServer,
@@ -136,6 +140,61 @@ export function registerListingTools(
       }
     },
   );
+
+  // --- pricelabs_update_listings ---
+
+  server.registerTool(
+    "pricelabs_update_listings",
+    {
+      description:
+        "Update base/min/max prices or tags for one or more listings. REQUIRES reason parameter for audit trail. This is a DESTRUCTIVE operation -- changes take effect immediately.",
+      inputSchema: UpdateListingsInputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (params) => {
+      try {
+        // Log the reason for audit trail visibility
+        const reason = params.reason;
+
+        // Write operations go directly to the live API -- never cached
+        const response = await apiClient.post<unknown>("/v1/listings", {
+          listings: params.listings,
+        });
+
+        // Invalidate all listing cache entries after successful write
+        cache.invalidate("listings:");
+        cache.invalidate("listing:");
+
+        // Build response with write metadata
+        const status = rateLimiter.getStatus();
+        const toolResponse: ToolResponse<unknown> = {
+          data: response.data,
+          computed: {
+            reason,
+            listings_updated: params.listings.length,
+          },
+          meta: {
+            cache_age_seconds: 0,
+            data_source: "live",
+            api_calls_remaining: status.remaining,
+            fetched_at: new Date().toISOString(),
+          },
+        };
+
+        return {
+          content: [
+            { type: "text" as const, text: JSON.stringify(toolResponse) },
+          ],
+        };
+      } catch (error) {
+        return formatWriteErrorResponse(error);
+      }
+    },
+  );
 }
 
 // --- Error formatting helpers ---
@@ -161,6 +220,35 @@ function formatErrorResponse(error: unknown): {
     message = `Unexpected error: ${error.message}. Try again shortly.`;
   } else {
     message = `Unknown error occurred. Try again shortly.`;
+  }
+
+  return {
+    content: [{ type: "text" as const, text: message }],
+    isError: true,
+  };
+}
+
+/**
+ * Format errors for write tool responses.
+ * Write-specific messaging: never suggests cached data, emphasizes severity.
+ */
+function formatWriteErrorResponse(error: unknown): {
+  content: Array<{ type: "text"; text: string }>;
+  isError: true;
+} {
+  let message: string;
+
+  if (error instanceof RateLimitError) {
+    const retryMinutes = Math.ceil(error.retryAfterMs / 60_000);
+    message = `Cannot update listings -- rate limit reached. No cached data is used for write operations. Try again in ~${retryMinutes} minutes.`;
+  } else if (error instanceof AuthError) {
+    message = `CRITICAL: Authentication failed. Listing update could not be executed. Check PRICELABS_API_KEY immediately.`;
+  } else if (error instanceof ApiError) {
+    message = `Listing update failed (${error.statusCode}): ${error.message}. Check that the listing IDs and PMS values are correct.`;
+  } else if (error instanceof Error) {
+    message = `Listing update failed: ${error.message}. The update was not applied. Try again shortly.`;
+  } else {
+    message = `Listing update failed with unknown error. The update was not applied. Try again shortly.`;
   }
 
   return {
