@@ -4,18 +4,18 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Executing Phase 1 plans. Plans 01-06 complete (rate limiter, schemas, domain skill, API client, listing/neighborhood/reservation tools, price/override tools).
+**Current Focus:** Executing Phase 1 plans. Plans 01-07 complete (rate limiter, schemas, domain skill, API client, listing tools, price/override tools, remaining tools).
 
 ## Current Position
 
 **Milestone:** v1
 **Phase:** 1 - MCP Server Foundation + Infrastructure Security
-**Plan:** 6 of 9
+**Plan:** 7 of 9
 **Status:** In Progress
 
 **Progress:**
 ```
-Phase 1 [######....] 67%  <- YOU ARE HERE
+Phase 1 [#######...] 78%  <- YOU ARE HERE
 Phase 2 [..........] 0%
 Phase 3 [..........] 0%
 Phase 4 [..........] 0%
@@ -26,7 +26,7 @@ Phase 5 [..........] 0%
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 6 |
+| Plans completed | 7 |
 | Plans failed | 0 |
 | Requirements delivered | 0/43 |
 | Phases completed | 0/5 |
@@ -38,6 +38,7 @@ Phase 5 [..........] 0%
 | 01 | 04 | 4min | 2 | 2 |
 | 01 | 05 | 8min | 2 | 1 |
 | 01 | 06 | 8min | 2 | 2 |
+| 01 | 07 | 11min | 2 | 5 |
 
 ## Accumulated Context
 
@@ -59,6 +60,9 @@ Phase 5 [..........] 0%
 | Separate error formatters for read vs write operations | 01-05 | Write errors never suggest cached data; read errors include freshness context |
 | Defense-in-depth DSO validation: Zod + runtime handler | 01-06 | Percentage range checked in both Zod schema and set_overrides handler; fixed-price DSOs fail-safe on missing listing data |
 | Post-write verification for DSO writes | 01-06 | Immediately GET overrides after POST to detect silently dropped dates (past dates, outside sync window) |
+| Status tool serverStartTime at module level | 01-07 | Module-level timestamp captures when the server module loads, giving accurate uptime without passing start time as parameter |
+| add_listing uses z.literal("bookingsync") | 01-07 | Enforces PMS restriction at schema level rather than runtime check; TypeScript compiler catches invalid values |
+| Neighborhood computed fields skip when listing not cached | 01-07 | Avoids burning a rate limit token just for computed field enrichment; returns null for price_percentile_position instead |
 
 ### Lessons Learned
 
@@ -77,11 +81,11 @@ Phase 5 [..........] 0%
 
 ## Session Continuity
 
-**Last Session:** 2026-02-22T21:08:00Z
-**Stopped At:** Completed 01-05-PLAN.md (parallel fill)
-**What Happened:** Completed listing tools plan (01-05, parallel with 01-06). Registered 3 MCP tools: get_listings and get_listing with 60-min cache and computed field enrichment (occupancy_gap_pct, revenue_vs_stly_pct, days_since_sync), update_listings with destructive annotation, required reason parameter for audit trail, and post-write cache invalidation. Used registerTool API with annotations config. Zero deviations.
-**Next Action:** Execute next available plan in Phase 1 (01-07)
+**Last Session:** 2026-02-22T21:09:00Z
+**Stopped At:** Completed 01-07-PLAN.md
+**What Happened:** Completed remaining tools plan (01-07). Registered 6 tools across 5 files: get_neighborhood (24hr cache, competitive positioning computed field), get_reservations (60min cache, pagination), get_rate_plans (6hr cache, pms_name param), push_prices (destructive, reason required), add_listing (BookingSync only via z.literal, reason required), get_api_status (internal state only, zero API calls). Zero deviations.
+**Next Action:** Execute next available plan in Phase 1 (01-08)
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-22T21:08:00Z*
+*Last updated: 2026-02-22T21:09:00Z*
