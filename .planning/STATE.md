@@ -36,6 +36,7 @@ Phase 5 [..........] 0%
 | 01 | 02 | 4min | 2 | 8 |
 | 01 | 03 | 5min | 1 | 1 |
 | 01 | 04 | 4min | 2 | 2 |
+| 01 | 05 | 8min | 2 | 1 |
 | 01 | 06 | 8min | 2 | 2 |
 
 ## Accumulated Context
@@ -54,6 +55,8 @@ Phase 5 [..........] 0%
 | Computed fields return null, never throw | 01-02 | All compute functions handle missing data gracefully, avoiding runtime crashes on incomplete API responses |
 | Retry-After parsed as seconds, 60s default | 01-04 | PriceLabs convention; safe fallback when header missing |
 | Network errors retryable like 5xx, max 3 retries | 01-04 | Transient network issues shouldn't fail permanently; same backoff logic as server errors |
+| Used registerTool API (not deprecated server.tool) with annotations | 01-05 | SDK supports annotations config object in registerTool; future-proof vs deprecated overloads |
+| Separate error formatters for read vs write operations | 01-05 | Write errors never suggest cached data; read errors include freshness context |
 | Defense-in-depth DSO validation: Zod + runtime handler | 01-06 | Percentage range checked in both Zod schema and set_overrides handler; fixed-price DSOs fail-safe on missing listing data |
 | Post-write verification for DSO writes | 01-06 | Immediately GET overrides after POST to detect silently dropped dates (past dates, outside sync window) |
 
@@ -74,11 +77,11 @@ Phase 5 [..........] 0%
 
 ## Session Continuity
 
-**Last Session:** 2026-02-22T21:05:00Z
-**Stopped At:** Completed 01-06-PLAN.md
-**What Happened:** Completed pricing and override tool registration plan (01-06). Registered 4 MCP tools: get_prices with demand signal enrichment, get/set/delete overrides with full DSO safety validation chain (percentage range, currency match, price floor, post-write verification). One deviation: used apiClient.request() directly for DELETE with body since convenience method lacks body support. All files pass tsc --noEmit.
+**Last Session:** 2026-02-22T21:08:00Z
+**Stopped At:** Completed 01-05-PLAN.md (parallel fill)
+**What Happened:** Completed listing tools plan (01-05, parallel with 01-06). Registered 3 MCP tools: get_listings and get_listing with 60-min cache and computed field enrichment (occupancy_gap_pct, revenue_vs_stly_pct, days_since_sync), update_listings with destructive annotation, required reason parameter for audit trail, and post-write cache invalidation. Used registerTool API with annotations config. Zero deviations.
 **Next Action:** Execute next available plan in Phase 1 (01-07)
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-22T21:05:00Z*
+*Last updated: 2026-02-22T21:08:00Z*
