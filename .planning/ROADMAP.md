@@ -53,6 +53,16 @@ Plans:
 
 **Dependencies:** Phase 1 (MCP server must be operational for all API access)
 
+**Plans:** 6 plans
+
+Plans:
+- [ ] 02-01-PLAN.md -- Install better-sqlite3 + database service + schema migrations
+- [ ] 02-02-PLAN.md -- Zod schemas for new tools + prepared statement query modules
+- [ ] 02-03-PLAN.md -- Snapshot storage/retrieval MCP tools (5 tools)
+- [ ] 02-04-PLAN.md -- Monitoring + audit MCP tools (3 tools) + server wiring
+- [ ] 02-05-PLAN.md -- Monitoring skill + OpenClaw cron config + env update
+- [ ] 02-06-PLAN.md -- End-to-end verification checkpoint
+
 **Requirements:**
 - MON-01: Agent sends daily portfolio health summary to Slack and Telegram at configurable time
 - MON-02: Daily summary includes health scores, occupancy vs market, sync status, and revenue vs STLY for each listing
@@ -154,8 +164,8 @@ Plans:
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | MCP Server Foundation + Infrastructure Security | 6 | Planned (9 plans) |
-| 2 | Monitoring + Persistence + Interactive + Delivery | 17 | Not Started |
+| 1 | MCP Server Foundation + Infrastructure Security | 6 | Complete (9 plans) |
+| 2 | Monitoring + Persistence + Interactive + Delivery | 17 | Planned (6 plans) |
 | 3 | Analysis Layer + Smart Alerting | 6 | Not Started |
 | 4 | Write Operations + Approval Workflow | 10 | Not Started |
 | 5 | Scale + Feedback Loop | 4 | Not Started |
@@ -164,4 +174,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-22*
+*Last updated: 2026-02-22T22:00:00Z*
