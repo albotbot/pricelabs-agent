@@ -23,6 +23,8 @@ export const LogActionInputSchema = z.object({
       "execution",
       "alert",
       "report",
+      "snapshot",
+      "rollback",
     ])
     .describe("Type of agent action"),
   listing_id: z
@@ -63,6 +65,8 @@ export const GetAuditLogInputSchema = z.object({
       "execution",
       "alert",
       "report",
+      "snapshot",
+      "rollback",
     ])
     .optional()
     .describe("Filter by action type"),
