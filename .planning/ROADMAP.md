@@ -100,9 +100,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Analysis Zod schemas + SQL query module + MCP tools (2 tools) + server wiring
-- [ ] 03-02-PLAN.md -- Analysis skill (6-section analytical playbook) + weekly cron config
-- [ ] 03-03-PLAN.md -- End-to-end verification checkpoint
+- [x] 03-01-PLAN.md -- Analysis Zod schemas + SQL query module + MCP tools (2 tools) + server wiring
+- [x] 03-02-PLAN.md -- Analysis skill (6-section analytical playbook) + weekly cron config
+- [x] 03-03-PLAN.md -- End-to-end verification checkpoint
 
 **Requirements:**
 - ANLY-01: Agent detects underperforming listings using health scores, occupancy gaps, and revenue drops
