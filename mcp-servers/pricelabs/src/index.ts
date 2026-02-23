@@ -1,7 +1,7 @@
 /**
  * PriceLabs MCP Server entry point.
  *
- * Wires all 21 tools (11 registration functions) to a single MCP server
+ * Wires all 23 tools (12 registration functions) to a single MCP server
  * connected via stdio transport. Initializes SQLite database with WAL mode
  * and runs migrations on startup. Validates environment on startup and
  * exits with actionable error if PRICELABS_API_KEY is missing.
@@ -31,6 +31,7 @@ import { runMigrations } from "./db/migrations.js";
 import { registerSnapshotTools } from "./tools/snapshots.js";
 import { registerMonitoringTools } from "./tools/monitoring.js";
 import { registerAuditTools } from "./tools/audit.js";
+import { registerAnalysisTools } from "./tools/analysis.js";
 
 // --- Environment validation ---
 // Exit immediately with actionable error if API key is missing.
@@ -66,7 +67,7 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
-// --- Tool registration (11 functions, 21 tools total) ---
+// --- Tool registration (12 functions, 23 tools total) ---
 
 registerListingTools(server, apiClient, cache, rateLimiter);
 registerPriceTools(server, apiClient, cache, rateLimiter);
@@ -81,6 +82,9 @@ registerStatusTools(server, rateLimiter, cache);
 registerSnapshotTools(server, db);
 registerMonitoringTools(server, db);
 registerAuditTools(server, db);
+
+// --- Phase 3 tool registration (1 function, 2 tools) ---
+registerAnalysisTools(server, db);
 
 // --- Transport connection ---
 
