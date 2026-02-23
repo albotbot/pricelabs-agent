@@ -44,5 +44,51 @@
       "to": "${TELEGRAM_HEALTH_CHAT_ID}",
       "bestEffort": true
     }
+  },
+  {
+    "name": "weekly-optimization-report-slack",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 10 * * 1",
+      "tz": "America/Chicago",
+      "staggerMs": 0
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "next-heartbeat",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Generate the weekly optimization report. Follow the Weekly Optimization Report Protocol from your analysis skill. Compute portfolio KPIs with week-over-week and STLY comparisons. Detect underperforming listings and provide specific recommended actions with dollar amounts and percentages. Include competitive market positioning for each listing. Log the report when complete.",
+      "model": "opus",
+      "thinking": "high"
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "${SLACK_HEALTH_CHANNEL}",
+      "bestEffort": true
+    }
+  },
+  {
+    "name": "weekly-optimization-report-telegram",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 10 * * 1",
+      "tz": "America/Chicago",
+      "staggerMs": 30000
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "next-heartbeat",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Generate the weekly optimization report. Follow the Weekly Optimization Report Protocol from your analysis skill. Compute portfolio KPIs with week-over-week and STLY comparisons. Detect underperforming listings and provide specific recommended actions with dollar amounts and percentages. Include competitive market positioning for each listing. Log the report when complete.",
+      "model": "opus",
+      "thinking": "high"
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "telegram",
+      "to": "${TELEGRAM_HEALTH_CHAT_ID}",
+      "bestEffort": true
+    }
   }
 ]
