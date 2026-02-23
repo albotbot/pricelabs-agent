@@ -4,19 +4,19 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Phase 2 in progress. SQLite foundation (02-01) complete -- better-sqlite3 installed, 5 table migrations ready. Executing persistence and monitoring plans.
+**Current Focus:** Phase 2 in progress. SQLite foundation (02-01) and schemas/queries (02-02) complete. 8 Zod input schemas and 5 query modules ready for tool handler wiring.
 
 ## Current Position
 
 **Milestone:** v1
 **Phase:** 2 - Monitoring + Persistence + Interactive Queries + Channel Delivery
-**Plan:** 1 of 6
+**Plan:** 2 of 6
 **Status:** IN PROGRESS
 
 **Progress:**
 ```
 Phase 1 [##########] 100%  <- COMPLETE
-Phase 2 [##........] 17%   <- CURRENT
+Phase 2 [####......] 33%   <- CURRENT
 Phase 3 [..........] 0%
 Phase 4 [..........] 0%
 Phase 5 [..........] 0%
@@ -26,7 +26,7 @@ Phase 5 [..........] 0%
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 10 |
+| Plans completed | 11 |
 | Plans failed | 0 |
 | Requirements delivered | 6/43 (INFRA-01 through INFRA-06) |
 | Phases completed | 1/5 |
@@ -43,6 +43,7 @@ Phase 5 [..........] 0%
 | 01 | 08 | 5min | 2 | 2 |
 | 01 | 09 | 2min | 0 | 0 |
 | 02 | 01 | 14min | 2 | 5 |
+| 02 | 02 | 18min | 2 | 7 |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Phase 5 [..........] 0%
 | user_version pragma for migration tracking | 02-01 | Simpler than migrations table; built-in to SQLite, atomic with schema changes |
 | No database singleton -- caller manages lifecycle | 02-01 | initializeDatabase returns instance; keeps testability high, avoids module-level side effects |
 | Removed declaration: true from tsconfig | 02-01 | MCP server is application, not library; fixes TS4058 with better-sqlite3 export= pattern |
+| import * as BetterSqlite3 for query modules | 02-02 | Namespace import provides direct access to Statement/Transaction types; works with or without declaration emit |
+| SQL-level cancellation detection in reservation upsert | 02-02 | ON CONFLICT CASE expression auto-sets cancelled_on on first transition; atomic, no application-level logic needed |
 
 ### Lessons Learned
 
@@ -92,11 +95,11 @@ Phase 5 [..........] 0%
 
 ## Session Continuity
 
-**Last Session:** 2026-02-22T23:56:06Z
-**Stopped At:** Completed 02-01-PLAN.md (SQLite Database Foundation)
-**What Happened:** Installed better-sqlite3, created database service with WAL mode, and 5 versioned schema migrations for all Phase 2 tables. Fixed TS4058 declaration emit issue by removing unnecessary declaration: true from tsconfig. All TypeScript compiles cleanly.
-**Next Action:** Execute remaining Phase 2 plans (02-02 through 02-06)
+**Last Session:** 2026-02-22T23:59:37Z
+**Stopped At:** Completed 02-02-PLAN.md (Schemas and Query Modules)
+**What Happened:** Created 8 Zod input schemas (5 snapshot + 3 monitoring) and 5 prepared statement query modules for all database tables. 20 prepared statements total with batch transaction support. Reservation upsert handles cancellation detection in SQL. Audit log includes dedup query for alert flooding prevention.
+**Next Action:** Execute remaining Phase 2 plans (02-03 through 02-06)
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-22T23:56:06Z*
+*Last updated: 2026-02-22T23:59:37Z*
