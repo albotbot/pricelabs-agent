@@ -1,0 +1,48 @@
+[
+  {
+    "name": "daily-portfolio-health-slack",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 8 * * *",
+      "tz": "America/Chicago",
+      "staggerMs": 0
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "next-heartbeat",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Run the daily portfolio health check. Follow the Daily Health Check Protocol from your monitoring skill. Fetch all listings, store snapshots, compute booking pace, detect stale syncs, and generate the portfolio health summary report.",
+      "model": "opus",
+      "thinking": "high"
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "${SLACK_HEALTH_CHANNEL}",
+      "bestEffort": true
+    }
+  },
+  {
+    "name": "daily-portfolio-health-telegram",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 8 * * *",
+      "tz": "America/Chicago",
+      "staggerMs": 30000
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "next-heartbeat",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Run the daily portfolio health check. Follow the Daily Health Check Protocol from your monitoring skill. Fetch all listings, store snapshots, compute booking pace, detect stale syncs, and generate the portfolio health summary report.",
+      "model": "opus",
+      "thinking": "high"
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "telegram",
+      "to": "${TELEGRAM_HEALTH_CHAT_ID}",
+      "bestEffort": true
+    }
+  }
+]

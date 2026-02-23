@@ -1,0 +1,98 @@
+{
+  "_comment": "OpenClaw Gateway configuration for PriceLabs Revenue Agent. Environment variable references like ${VAR} are resolved from ~/.openclaw/.env and must be set there. NEVER put actual secrets in this file.",
+
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "all",
+        "scope": "agent",
+        "workspaceAccess": "ro"
+      },
+      "tools": {
+        "deny": [
+          "group:automation",
+          "group:runtime",
+          "exec",
+          "write",
+          "edit",
+          "apply_patch",
+          "process",
+          "sessions_spawn",
+          "sessions_send",
+          "gateway",
+          "cron"
+        ],
+        "fs": {
+          "workspaceOnly": true
+        },
+        "exec": {
+          "security": "deny"
+        },
+        "elevated": {
+          "enabled": false
+        }
+      },
+      "session": {
+        "dmScope": "per-channel-peer"
+      }
+    },
+    "list": [
+      {
+        "id": "pricelabs",
+        "name": "PriceLabs Revenue Agent",
+        "model": "anthropic/claude-opus-4-6",
+        "mcp": {
+          "servers": [
+            {
+              "name": "pricelabs",
+              "command": "node",
+              "args": ["mcp-servers/pricelabs/dist/index.js"],
+              "env": {
+                "PRICELABS_API_KEY": "${PRICELABS_API_KEY}",
+                "PRICELABS_BASE_URL": "https://api.pricelabs.co",
+                "PRICELABS_DB_PATH": "${HOME}/.pricelabs-agent/data.sqlite"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "channels": {
+    "slack": {
+      "enabled": true,
+      "socketMode": true,
+      "appToken": "${SLACK_APP_TOKEN}",
+      "botToken": "${SLACK_BOT_TOKEN}",
+      "dmPolicy": "pairing",
+      "threadReply": true
+    },
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "pairing",
+      "groups": {
+        "requireMention": true
+      }
+    }
+  },
+
+  "logging": {
+    "redactSensitive": "tools",
+    "redactPatterns": [
+      "X-API-Key",
+      "api[_-]?key",
+      "PRICELABS"
+    ]
+  }
+}
