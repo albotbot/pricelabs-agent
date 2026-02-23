@@ -4,20 +4,20 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Phase 2 COMPLETE. All 6 plans executed, all 21 MCP tools registered, E2E verification passed. 23/43 requirements delivered. Ready for Phase 3.
+**Current Focus:** Phase 3 in progress. Plans 01 and 02 complete. 23 MCP tools, analysis skill with 6 protocols, 4 cron jobs total. Plan 03 remaining.
 
 ## Current Position
 
 **Milestone:** v1
-**Phase:** 2 - Monitoring + Persistence + Interactive Queries + Channel Delivery
-**Plan:** 6 of 6
-**Status:** COMPLETE
+**Phase:** 3 - Analysis Layer + Smart Alerting
+**Plan:** 2 of 3
+**Status:** IN PROGRESS
 
 **Progress:**
 ```
 Phase 1 [##########] 100%  <- COMPLETE
 Phase 2 [##########] 100%  <- COMPLETE
-Phase 3 [..........] 0%   <- NEXT
+Phase 3 [######....] 66%  <- IN PROGRESS
 Phase 4 [..........] 0%
 Phase 5 [..........] 0%
 ```
@@ -26,7 +26,7 @@ Phase 5 [..........] 0%
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 15 |
+| Plans completed | 16 |
 | Plans failed | 0 |
 | Requirements delivered | 23/43 (INFRA-01..06, MON-01..05, INT-01..04, PERS-01..05, DEL-01..03) |
 | Phases completed | 2/5 |
@@ -48,6 +48,7 @@ Phase 5 [..........] 0%
 | 02 | 04 | 8min | 2 | 3 |
 | 02 | 05 | 6min | 2 | 3 |
 | 02 | 06 | 3min | 0 | 0 |
+| 03 | 02 | 6min | 2 | 2 |
 
 ## Accumulated Context
 
@@ -84,6 +85,10 @@ Phase 5 [..........] 0%
 | 30-second cron stagger for Telegram job | 02-05 | Prevents concurrent API bursts from two parallel agent sessions hitting PriceLabs simultaneously |
 | Alert dedup via audit log 24h cooldown | 02-05 | Audit log query for existing alerts rather than in-memory state; survives restarts, works across sessions |
 | Pace alerts only at 30d+ cutoffs | 02-05 | 7-day pace is too volatile for actionable alerts; 30d+ confirms sustained trends |
+| Analysis skill as playbook, not code engine | 03-02 | LLM is the analysis engine; skill provides protocols, thresholds, decision trees, templates. Follows "framework + reasoning" decision |
+| Weekly cron at 10am Monday (2h after daily) | 03-02 | Daily health check stores fresh snapshots at 8am; weekly report reads them at 10am, avoiding redundant API calls |
+| Text-based demand calendar with HIGH/MED/LOW | 03-02 | Works in all channels without image rendering infrastructure; maps demand_color hex to descriptors |
+| 24h alert dedup for analysis skill alerts | 03-02 | Extends monitoring skill pattern; checks audit log before sending underperformance alerts to prevent duplicates |
 
 ### Lessons Learned
 
@@ -103,11 +108,11 @@ Phase 5 [..........] 0%
 
 ## Session Continuity
 
-**Last Session:** 2026-02-23T01:30:00Z
-**Stopped At:** Completed Phase 2 execution (all 6 plans, all 4 waves)
-**What Happened:** Executed Phase 2 across 4 waves. Wave 1: database foundation (02-01) and schemas/queries (02-02) in parallel. Wave 2: snapshot tools (02-03) and monitoring/audit tools + wiring (02-04) in parallel — agents died mid-execution, orchestrator recovered code and completed commits/summaries. Wave 3: monitoring skill + cron config (02-05). Wave 4: E2E verification (02-06) — all 10 checks passed. 21 total MCP tools, SQLite with 5 tables, monitoring skill with 6 protocols, dual-channel cron delivery.
-**Next Action:** Plan and execute Phase 3 (Analysis Layer + Smart Alerting)
+**Last Session:** 2026-02-23T03:57:16Z
+**Stopped At:** Completed 03-02-PLAN.md (analysis skill + weekly cron)
+**What Happened:** Executed Phase 3 Plan 02. Created analysis skill (344 lines, 6 protocol sections) covering ANLY-01 through ANLY-06. Added 2 weekly cron jobs (Slack + Telegram) at 10am Monday CT. Skill includes underperformance action decision tree with specific number placeholders, demand calendar text format, competitive positioning protocol, and monitoring skill coordination with alert dedup.
+**Next Action:** Continue Phase 3 execution (Plan 01 or Plan 03 remaining)
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-23T01:30:00Z*
+*Last updated: 2026-02-23T03:57:16Z*
