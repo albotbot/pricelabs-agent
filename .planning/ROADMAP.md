@@ -126,6 +126,13 @@ Plans:
 
 **Dependencies:** Phase 3 (analysis layer provides the intelligence that drives recommendations; user trust established through read-only phases)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md -- Snapshot tool + audit enum extension + server wiring
+- [ ] 04-02-PLAN.md -- Optimization skill (7-section pricing optimization playbook)
+- [ ] 04-03-PLAN.md -- Cron enhancement + end-to-end verification
+
 **Requirements:**
 - OPT-01: Agent recommends pricing changes (base price, DSOs, min-stay) with clear rationale
 - OPT-02: All pricing recommendations require explicit user approval in messaging before execution
@@ -174,11 +181,11 @@ Plans:
 | 1 | MCP Server Foundation + Infrastructure Security | 6 | Complete (9 plans) |
 | 2 | Monitoring + Persistence + Interactive + Delivery | 17 | Complete (6 plans) |
 | 3 | Analysis Layer + Smart Alerting | 6 | Complete (3 plans) |
-| 4 | Write Operations + Approval Workflow | 10 | Not Started |
+| 4 | Write Operations + Approval Workflow | 10 | In Progress (3 plans) |
 | 5 | Scale + Feedback Loop | 4 | Not Started |
 
 **Total:** 43 requirements across 5 phases
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-23T03:30:00Z*
+*Last updated: 2026-02-23*
