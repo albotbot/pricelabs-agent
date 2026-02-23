@@ -97,6 +97,13 @@ Plans:
 
 **Dependencies:** Phase 2 (requires accumulated historical data in SQLite, working monitoring and delivery infrastructure)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md -- Analysis Zod schemas + SQL query module + MCP tools (2 tools) + server wiring
+- [ ] 03-02-PLAN.md -- Analysis skill (6-section analytical playbook) + weekly cron config
+- [ ] 03-03-PLAN.md -- End-to-end verification checkpoint
+
 **Requirements:**
 - ANLY-01: Agent detects underperforming listings using health scores, occupancy gaps, and revenue drops
 - ANLY-02: Underperformance alerts include specific recommended actions (lower base, expand last-minute discount, etc.)
@@ -166,7 +173,7 @@ Plans:
 |-------|------|--------------|--------|
 | 1 | MCP Server Foundation + Infrastructure Security | 6 | Complete (9 plans) |
 | 2 | Monitoring + Persistence + Interactive + Delivery | 17 | Complete (6 plans) |
-| 3 | Analysis Layer + Smart Alerting | 6 | Not Started |
+| 3 | Analysis Layer + Smart Alerting | 6 | Planned (3 plans) |
 | 4 | Write Operations + Approval Workflow | 10 | Not Started |
 | 5 | Scale + Feedback Loop | 4 | Not Started |
 
@@ -174,4 +181,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-22T22:00:00Z*
+*Last updated: 2026-02-23*
