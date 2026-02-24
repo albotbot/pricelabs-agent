@@ -160,6 +160,13 @@ Plans:
 
 **Dependencies:** Phase 4 (requires working write operations and approval flow to scale; requires executed changes to track impact)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md -- DB migrations (change_tracking + user_config) and query modules
+- [ ] 05-02-PLAN.md -- Optimization skill updates (batch approval + cancellation fill strategy) and cron enhancement
+- [ ] 05-03-PLAN.md -- Scale schemas + MCP tools (4 new tools) + underperformer threshold integration + server wiring
+
 **Requirements:**
 - SCALE-01: Agent supports batch approve/reject for multiple listing recommendations at once
 - SCALE-02: Agent tracks revenue impact of approved changes at 7/14/30 day intervals after execution
@@ -182,10 +189,10 @@ Plans:
 | 2 | Monitoring + Persistence + Interactive + Delivery | 17 | Complete (6 plans) |
 | 3 | Analysis Layer + Smart Alerting | 6 | Complete (3 plans) |
 | 4 | Write Operations + Approval Workflow | 10 | Complete (3 plans) |
-| 5 | Scale + Feedback Loop | 4 | Not Started |
+| 5 | Scale + Feedback Loop | 4 | Planned (3 plans) |
 
 **Total:** 43 requirements across 5 phases
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-23 — Phase 4 complete*
+*Last updated: 2026-02-24 — Phase 5 planned*
