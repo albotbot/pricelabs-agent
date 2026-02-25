@@ -27,7 +27,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 **Milestone Goal:** Prove v1.0 code works end-to-end with real PriceLabs API, OpenClaw deployment, and Slack/Telegram delivery. Every tool, every table, every cron job -- validated against real services.
 
 - [x] **Phase 6: Server Boot + Safety Gate** - MCP server builds, boots, creates database, registers all tools, and write tools are confirmed disabled (completed 2026-02-25)
-- [ ] **Phase 7: Live API Validation** - Real PriceLabs API calls succeed through MCP tool handlers with correct data shapes
+- [x] **Phase 7: Live API Validation** - Real PriceLabs API calls succeed through MCP tool handlers with correct data shapes (completed 2026-02-25)
 - [ ] **Phase 8: Snapshot Persistence** - Real portfolio data stored in SQLite and reads back correctly with pre-write safety verified
 - [ ] **Phase 9: OpenClaw Deployment** - MCP server runs in Docker sandbox with skills loaded and cron jobs firing
 - [ ] **Phase 10: Messaging Integration** - Slack and Telegram deliver summaries, answer questions, and handle approval flow
@@ -45,8 +45,8 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
   4. Calling `pricelabs_set_overrides`, `pricelabs_update_listings`, or `pricelabs_delete_overrides` returns an error indicating writes are disabled
 **Plans:** 2/2 plans complete
 Plans:
-- [ ] 06-01-PLAN.md -- Write safety gate (env var gating for write tools, openclaw config, skill instruction)
-- [ ] 06-02-PLAN.md -- Boot validation (automated script proving all 4 requirements)
+- [x] 06-01-PLAN.md -- Write safety gate (env var gating for write tools, openclaw config, skill instruction)
+- [x] 06-02-PLAN.md -- Boot validation (automated script proving all 4 requirements)
 
 ### Phase 7: Live API Validation
 **Goal**: Every read-path MCP tool successfully calls the real PriceLabs API and returns correctly shaped data for the user's actual portfolio
@@ -57,10 +57,10 @@ Plans:
   2. `pricelabs_get_prices`, `pricelabs_get_neighborhood`, and `pricelabs_get_reservations` each return real data for a known listing ID
   3. Rate limiter correctly tracks request count and cache returns cached responses on repeated calls within TTL
   4. Computed fields (price_percentile_position, occupancy_rate, revenue_pace, etc.) produce non-null numeric values from real API response shapes
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 07-01-PLAN.md -- Live API validation script (all read tools, rate limiter, cache verification)
-- [ ] 07-02-PLAN.md -- Computed fields validation + Swagger API coverage report
+- [x] 07-01-PLAN.md -- Live API validation script (all read tools, rate limiter, cache verification)
+- [x] 07-02-PLAN.md -- Computed fields validation + Swagger API coverage report
 
 ### Phase 8: Snapshot Persistence
 **Goal**: Real portfolio data flows through the store tools into SQLite and reads back correctly, with pre-write snapshot capture verified
@@ -109,11 +109,11 @@ Plans:
 | 4. Write Operations + Approval Workflow | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 5. Scale + Feedback Loop | v1.0 | 3/3 | Complete | 2026-02-25 |
 | 6. Server Boot + Safety Gate | v1.1 | 2/2 | Complete | 2026-02-25 |
-| 7. Live API Validation | 1/2 | In Progress|  | - |
+| 7. Live API Validation | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 8. Snapshot Persistence | v1.1 | 0/? | Not started | - |
 | 9. OpenClaw Deployment | v1.1 | 0/? | Not started | - |
 | 10. Messaging Integration | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-25 -- Phase 7 plans created*
+*Last updated: 2026-02-25 -- Phase 7 complete (2/2 plans, 6 requirements)*
