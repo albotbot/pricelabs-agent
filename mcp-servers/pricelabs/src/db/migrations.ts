@@ -1,11 +1,13 @@
 /**
- * Versioned schema migrations for all Phase 2 tables.
+ * Versioned schema migrations for all Phase 2 and Phase 5 tables.
  *
  * Uses SQLite `user_version` pragma for version tracking. Migrations are
  * idempotent -- running twice does not error or duplicate tables.
  *
- * Tables: listing_snapshots, price_snapshots, reservations, audit_log,
- * market_snapshots.
+ * Phase 2 tables: listing_snapshots, price_snapshots, reservations,
+ * audit_log, market_snapshots.
+ *
+ * Phase 5 tables: change_tracking, user_config.
  *
  * @module db/migrations
  */
@@ -20,7 +22,8 @@ interface Migration {
 }
 
 /**
- * All Phase 2 schema migrations, ordered by version.
+ * All schema migrations, ordered by version.
+ * Phase 2: migrations 1-5. Phase 5: migrations 6-7.
  */
 const migrations: Migration[] = [
   // --- Migration 1: listing_snapshots (PERS-01) ---
@@ -165,6 +168,63 @@ const migrations: Migration[] = [
           UNIQUE(listing_id, pms, snapshot_date)
         );
         CREATE INDEX idx_ms_listing_date ON market_snapshots(listing_id, pms, snapshot_date);
+      `);
+    },
+  },
+
+  // --- Migration 6: change_tracking (SCALE-02) ---
+  {
+    version: 6,
+    description: "Create change_tracking table for revenue impact follow-ups",
+    up(db) {
+      db.exec(`
+        CREATE TABLE change_tracking (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          audit_log_id INTEGER NOT NULL,
+          listing_id TEXT NOT NULL,
+          pms TEXT NOT NULL,
+          change_type TEXT NOT NULL,
+          change_date TEXT NOT NULL,
+          affected_dates_start TEXT,
+          affected_dates_end TEXT,
+          before_json TEXT NOT NULL,
+          after_json TEXT NOT NULL,
+          check_7d_due TEXT NOT NULL,
+          check_7d_done INTEGER NOT NULL DEFAULT 0,
+          check_7d_result_json TEXT,
+          check_14d_due TEXT NOT NULL,
+          check_14d_done INTEGER NOT NULL DEFAULT 0,
+          check_14d_result_json TEXT,
+          check_30d_due TEXT NOT NULL,
+          check_30d_done INTEGER NOT NULL DEFAULT 0,
+          check_30d_result_json TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX idx_ct_listing ON change_tracking(listing_id, pms);
+        CREATE INDEX idx_ct_pending ON change_tracking(check_7d_done, check_14d_done, check_30d_done);
+      `);
+    },
+  },
+
+  // --- Migration 7: user_config (SCALE-04) ---
+  {
+    version: 7,
+    description: "Create user_config table for configurable alert thresholds",
+    up(db) {
+      db.exec(`
+        CREATE TABLE user_config (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          config_key TEXT NOT NULL,
+          config_value TEXT NOT NULL,
+          listing_id TEXT,
+          pms TEXT,
+          listing_id_key TEXT GENERATED ALWAYS AS (COALESCE(listing_id, '__global__')) STORED,
+          pms_key TEXT GENERATED ALWAYS AS (COALESCE(pms, '__global__')) STORED,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(config_key, listing_id_key, pms_key)
+        );
+        CREATE INDEX idx_uc_key ON user_config(config_key);
+        CREATE INDEX idx_uc_listing ON user_config(listing_id, pms);
       `);
     },
   },
