@@ -118,6 +118,20 @@ export function registerOverrideTools(
       readOnlyHint: false,
     },
     async (args) => {
+      // --- Write safety gate (SAFE-01) ---
+      const writesEnabled = process.env.PRICELABS_WRITES_ENABLED;
+      if (writesEnabled !== "true") {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Write operations are disabled. Set PRICELABS_WRITES_ENABLED=true to enable.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const { listing_id, pms, overrides, reason } = args as SetOverridesInput;
 
       // ---- Step 1: Validate percentage range ----
@@ -318,6 +332,20 @@ export function registerOverrideTools(
       readOnlyHint: false,
     },
     async (args) => {
+      // --- Write safety gate (SAFE-01) ---
+      const writesEnabled = process.env.PRICELABS_WRITES_ENABLED;
+      if (writesEnabled !== "true") {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Write operations are disabled. Set PRICELABS_WRITES_ENABLED=true to enable.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const { listing_id, pms, dates, reason } = args;
 
       // Execute delete -- use request() directly since delete() doesn't accept body
