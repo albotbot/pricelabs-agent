@@ -11,7 +11,7 @@
     "wakeMode": "next-heartbeat",
     "payload": {
       "kind": "agentTurn",
-      "message": "Run the daily portfolio health check. Follow the Daily Health Check Protocol from your monitoring skill. Fetch all listings, store snapshots, compute booking pace, detect stale syncs, and generate the portfolio health summary report.",
+      "message": "Run the daily portfolio health check. Follow the Daily Health Check Protocol from your monitoring skill. Fetch all listings, store snapshots, compute booking pace, detect stale syncs, and generate the portfolio health summary report.\n\nAfter completing the health check, also:\n\n5. Check for pending revenue impact assessments. Call pricelabs_get_change_impact with pending_only=true. For each due assessment:\n   - For DSO changes: check if the affected dates booked by comparing current pricing data to the baseline in before_json\n   - For base price changes: compare current occupancy and revenue trends to the baseline\n   - Record the assessment result. If the impact is significant (occupancy changed by more than 5 percentage points, or affected DSO dates booked/did not book), include a brief note in today's health report.\n\n6. Check for new cancellations detected during reservation sync (Step 7). For each new cancellation, follow the Cancellation Fill Strategy Protocol (Section 9) from your optimization skill. Assess urgency based on check-in proximity, verify date availability, and formulate a fill strategy recommendation if the urgency is HIGH or URGENT. Present any fill strategy recommendations after the health report.",
       "model": "opus",
       "thinking": "high"
     },
@@ -34,7 +34,7 @@
     "wakeMode": "next-heartbeat",
     "payload": {
       "kind": "agentTurn",
-      "message": "Run the daily portfolio health check. Follow the Daily Health Check Protocol from your monitoring skill. Fetch all listings, store snapshots, compute booking pace, detect stale syncs, and generate the portfolio health summary report.",
+      "message": "Run the daily portfolio health check. Follow the Daily Health Check Protocol from your monitoring skill. Fetch all listings, store snapshots, compute booking pace, detect stale syncs, and generate the portfolio health summary report.\n\nAfter completing the health check, also:\n\n5. Check for pending revenue impact assessments. Call pricelabs_get_change_impact with pending_only=true. For each due assessment:\n   - For DSO changes: check if the affected dates booked by comparing current pricing data to the baseline in before_json\n   - For base price changes: compare current occupancy and revenue trends to the baseline\n   - Record the assessment result. If the impact is significant (occupancy changed by more than 5 percentage points, or affected DSO dates booked/did not book), include a brief note in today's health report.\n\n6. Check for new cancellations detected during reservation sync (Step 7). For each new cancellation, follow the Cancellation Fill Strategy Protocol (Section 9) from your optimization skill. Assess urgency based on check-in proximity, verify date availability, and formulate a fill strategy recommendation if the urgency is HIGH or URGENT. Present any fill strategy recommendations after the health report.",
       "model": "opus",
       "thinking": "high"
     },
