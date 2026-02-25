@@ -553,10 +553,164 @@ try {
   }
 
   // ---------------------------------------------------------------
+  // LIVE-06: Computed Fields Validation
+  // ---------------------------------------------------------------
+  console.log(`\n${BOLD}LIVE-06: Computed Fields${RESET}`);
+
+  let computedTotal = 0;
+  let computedNonNull = 0;
+
+  // --- 1. Listings computed fields ---
+  console.log(`\n  ${BOLD}From pricelabs_get_listings:${RESET}`);
+
+  const listingsEnvelope = listingsResult?.data;
+  const listingsComputed = listingsEnvelope?.computed?.listings_computed;
+
+  if (Array.isArray(listingsComputed) && listingsComputed.length > 0) {
+    const firstComputed = listingsComputed[0];
+
+    // occupancy_gap_pct
+    computedTotal++;
+    if (typeof firstComputed.occupancy_gap_pct === "number") {
+      check("occupancy_gap_pct is a number", true, `value=${firstComputed.occupancy_gap_pct}`);
+      computedNonNull++;
+    } else if (firstComputed.occupancy_gap_pct === null) {
+      warn("occupancy_gap_pct is null (source data may be missing)");
+    } else {
+      check("occupancy_gap_pct is number or null", false, `type=${typeof firstComputed.occupancy_gap_pct}`);
+    }
+
+    // revenue_vs_stly_pct
+    computedTotal++;
+    if (typeof firstComputed.revenue_vs_stly_pct === "number") {
+      check("revenue_vs_stly_pct is a number", true, `value=${firstComputed.revenue_vs_stly_pct}`);
+      computedNonNull++;
+    } else if (firstComputed.revenue_vs_stly_pct === null) {
+      warn("revenue_vs_stly_pct is null (source data may be missing)");
+    } else {
+      check("revenue_vs_stly_pct is number or null", false, `type=${typeof firstComputed.revenue_vs_stly_pct}`);
+    }
+
+    // days_since_sync
+    computedTotal++;
+    if (typeof firstComputed.days_since_sync === "number") {
+      check("days_since_sync is a number", true, `value=${firstComputed.days_since_sync}`);
+      computedNonNull++;
+    } else if (firstComputed.days_since_sync === null) {
+      warn("days_since_sync is null (no last_date_pushed)");
+    } else {
+      check("days_since_sync is number or null", false, `type=${typeof firstComputed.days_since_sync}`);
+    }
+
+    // health_trend
+    computedTotal++;
+    const validTrends = ["improving", "declining", "stable"];
+    if (typeof firstComputed.health_trend === "string" && validTrends.includes(firstComputed.health_trend)) {
+      check("health_trend is a valid trend string", true, `value="${firstComputed.health_trend}"`);
+      computedNonNull++;
+    } else if (firstComputed.health_trend === null) {
+      warn("health_trend is null (missing health_7_day or health_30_day)");
+    } else {
+      check("health_trend is valid trend or null", false, `value=${JSON.stringify(firstComputed.health_trend)}`);
+    }
+
+    // Print all computed fields for diagnostics
+    console.log(`\n  ${YELLOW}${BOLD}Listings computed fields (diagnostic):${RESET}`);
+    for (const [key, value] of Object.entries(firstComputed)) {
+      const display = value === null ? `${YELLOW}null${RESET}` : String(value);
+      console.log(`    ${DIM}${key}:${RESET} ${display}`);
+    }
+  } else {
+    warn("No listings_computed array found in response", "computed fields may not be generated");
+  }
+
+  // --- 2. Prices computed fields ---
+  console.log(`\n  ${BOLD}From pricelabs_get_prices:${RESET}`);
+
+  const pricesEnvelope = pricesResult?.data;
+  const dailyComputed = pricesEnvelope?.computed?.daily_computed;
+
+  if (Array.isArray(dailyComputed) && dailyComputed.length > 0) {
+    const firstDailyComputed = dailyComputed[0];
+
+    // demand_level
+    computedTotal++;
+    if (typeof firstDailyComputed.demand_level === "string" && firstDailyComputed.demand_level.length > 0) {
+      check("demand_level is a non-empty string", true, `value="${firstDailyComputed.demand_level}"`);
+      computedNonNull++;
+    } else if (firstDailyComputed.demand_level === null) {
+      warn("demand_level is null (no demand_color or demand_desc in source data)");
+    } else {
+      check("demand_level is non-empty string or null", false, `value=${JSON.stringify(firstDailyComputed.demand_level)}`);
+    }
+
+    // is_booked
+    computedTotal++;
+    if (typeof firstDailyComputed.is_booked === "boolean") {
+      check("is_booked is a boolean", true, `value=${firstDailyComputed.is_booked}`);
+      computedNonNull++;
+    } else if (firstDailyComputed.is_booked === null) {
+      warn("is_booked is null (no booking_status in source data)");
+    } else {
+      check("is_booked is boolean or null", false, `type=${typeof firstDailyComputed.is_booked}`);
+    }
+
+    // Print all computed fields for diagnostics
+    console.log(`\n  ${YELLOW}${BOLD}Price computed fields (diagnostic):${RESET}`);
+    for (const [key, value] of Object.entries(firstDailyComputed)) {
+      const display = value === null ? `${YELLOW}null${RESET}` : String(value);
+      console.log(`    ${DIM}${key}:${RESET} ${display}`);
+    }
+  } else {
+    warn("No daily_computed array found in response", "computed fields may not be generated");
+  }
+
+  // --- 3. Neighborhood computed fields ---
+  console.log(`\n  ${BOLD}From pricelabs_get_neighborhood:${RESET}`);
+
+  const neighborhoodEnvelope = neighborhoodResult?.data;
+  const neighborhoodComputed = neighborhoodEnvelope?.computed;
+
+  computedTotal++;
+  if (neighborhoodComputed) {
+    const percentilePosition = neighborhoodComputed.price_percentile_position;
+    const validPositions = ["below_25th", "25th_to_50th", "50th_to_75th", "75th_to_90th", "above_90th"];
+
+    if (typeof percentilePosition === "string" && validPositions.includes(percentilePosition)) {
+      check("price_percentile_position is a valid position", true, `value="${percentilePosition}"`);
+      computedNonNull++;
+    } else if (percentilePosition === null) {
+      info("price_percentile_position is null (expected if listing was not cached before neighborhood call)");
+    } else {
+      check("price_percentile_position is valid position or null", false, `value=${JSON.stringify(percentilePosition)}`);
+    }
+
+    // Print computed field for diagnostics
+    console.log(`\n  ${YELLOW}${BOLD}Neighborhood computed fields (diagnostic):${RESET}`);
+    for (const [key, value] of Object.entries(neighborhoodComputed)) {
+      const display = value === null ? `${YELLOW}null${RESET}` : String(value);
+      console.log(`    ${DIM}${key}:${RESET} ${display}`);
+    }
+  } else {
+    info("No computed fields object found in neighborhood response (expected if listing was not cached)");
+  }
+
+  // Computed fields summary
+  console.log(`\n  ${BOLD}Computed fields: ${computedNonNull}/${computedTotal} produced non-null values${RESET}`);
+  if (computedNonNull === computedTotal) {
+    console.log(`  ${GREEN}All computed fields produced values from real API data.${RESET}`);
+  } else if (computedNonNull > 0) {
+    console.log(`  ${YELLOW}Some computed fields are null -- check source data availability above.${RESET}`);
+  } else {
+    console.log(`  ${RED}No computed fields produced values -- check data shape compatibility.${RESET}`);
+  }
+
+  // ---------------------------------------------------------------
   // Summary
   // ---------------------------------------------------------------
   console.log(`\n${BOLD}=== Results ===${RESET}`);
-  console.log(`\n  Passed: ${GREEN}${passes}${RESET}, Failed: ${RED}${failures}${RESET}, Warnings: ${YELLOW}${warnings}${RESET}\n`);
+  console.log(`\n  Passed: ${GREEN}${passes}${RESET}, Failed: ${RED}${failures}${RESET}, Warnings: ${YELLOW}${warnings}${RESET}`);
+  console.log(`  Computed fields: ${computedNonNull}/${computedTotal} non-null\n`);
 
   if (failures === 0) {
     console.log(`  ${GREEN}${BOLD}ALL CHECKS PASSED${RESET} -- Phase 7 live API validation complete.\n`);
