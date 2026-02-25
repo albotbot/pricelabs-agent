@@ -64,14 +64,19 @@ export function registerPriceTools(
         cacheKey,
         () =>
           apiClient
-            .post<PricesResponse>("/v1/listing_prices", {
+            .post<PricesResponse[]>("/v1/listing_prices", {
               listing_id,
               pms,
               start_date,
               end_date,
               currency,
             })
-            .then((r) => r.data),
+            .then((r) => {
+              // API returns array of pricing objects, one per listing
+              const arr = r.data;
+              if (Array.isArray(arr) && arr.length > 0) return arr[0];
+              return r.data as unknown as PricesResponse;
+            }),
         cache,
         rateLimiter,
         PRICES_CACHE_TTL_MS,

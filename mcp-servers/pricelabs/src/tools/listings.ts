@@ -74,10 +74,11 @@ export function registerListingTools(
         const result = await fetchWithFallback<Listing[]>(
           cacheKey,
           async () => {
-            const response = await apiClient.get<Listing[]>(
+            const response = await apiClient.get<{ listings: Listing[] }>(
               `/v1/listings${queryString}`,
             );
-            return response.data;
+            // API returns { listings: [...] } wrapper, unwrap to get the array
+            return response.data.listings;
           },
           cache,
           rateLimiter,
@@ -121,10 +122,15 @@ export function registerListingTools(
         const result = await fetchWithFallback<Listing>(
           cacheKey,
           async () => {
-            const response = await apiClient.get<Listing>(
+            const response = await apiClient.get<{ listings: Listing[] }>(
               `/v1/listings/${params.listing_id}?pms=${encodeURIComponent(params.pms)}`,
             );
-            return response.data;
+            // API returns { listings: [listing] } wrapper even for single listing
+            const listings = response.data.listings;
+            if (!listings || listings.length === 0) {
+              throw new Error(`Listing ${params.listing_id} not found`);
+            }
+            return listings[0];
           },
           cache,
           rateLimiter,

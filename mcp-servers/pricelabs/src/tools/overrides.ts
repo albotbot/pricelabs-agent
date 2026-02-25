@@ -82,7 +82,10 @@ export function registerOverrideTools(
 
       const result = await fetchWithFallback<OverrideEntry[]>(
         cacheKey,
-        () => apiClient.get<OverrideEntry[]>(path).then((r) => r.data),
+        () =>
+          apiClient
+            .get<{ overrides: OverrideEntry[] }>(path)
+            .then((r) => r.data.overrides),
         cache,
         rateLimiter,
         OVERRIDES_CACHE_TTL_MS,
@@ -177,10 +180,12 @@ export function registerOverrideTools(
         // Fetch listing data to verify currency matches PMS listing currency
         let listingData: Listing | null = null;
         try {
-          const listingResponse = await apiClient.get<Listing>(
+          const listingResponse = await apiClient.get<{ listings: Listing[] }>(
             `/v1/listings/${listing_id}?pms=${encodeURIComponent(pms)}`,
           );
-          listingData = listingResponse.data;
+          // API returns { listings: [listing] } wrapper
+          const listingsArr = listingResponse.data.listings;
+          listingData = listingsArr && listingsArr.length > 0 ? listingsArr[0] : null;
         } catch {
           // If we can't fetch listing data, we can't validate currency --
           // fail safe by rejecting the write
@@ -268,10 +273,10 @@ export function registerOverrideTools(
         const verifyPath =
           `/v1/listings/${listing_id}/overrides?pms=${encodeURIComponent(pms)}` +
           `&start_date=${minDate}&end_date=${maxDate}`;
-        const verifyResponse = await apiClient.get<OverrideEntry[]>(verifyPath);
+        const verifyResponse = await apiClient.get<{ overrides: OverrideEntry[] }>(verifyPath);
 
         const confirmedDates = new Set(
-          verifyResponse.data.map((entry) => entry.date),
+          verifyResponse.data.overrides.map((entry) => entry.date),
         );
         droppedDates = requestedDates.filter(
           (date) => !confirmedDates.has(date),
