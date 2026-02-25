@@ -30,6 +30,16 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 ### Active
 
+**Current Milestone: v1.1 Integration & Validation**
+
+- [ ] MCP server boots, connects to SQLite, runs migrations, and serves tools end-to-end
+- [ ] Live PriceLabs API calls succeed through MCP tool handlers with real portfolio data
+- [ ] Snapshot storage persists real listing, price, market, and reservation data correctly
+- [ ] OpenClaw deployment runs MCP server in Docker sandbox with cron job execution
+- [ ] Slack delivery routes daily health summaries and alerts to user's workspace
+
+**Deferred to v2.0:**
+
 - [ ] Multi-user support for scaling to other hosts/PMs (MULTI-01..03)
 - [ ] Auto-approval for low-risk changes below user-defined thresholds (AUTO-01)
 - [ ] Seasonal profile management via agent (AUTO-02)
@@ -114,4 +124,4 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 | 5-phase read-before-write progression | Agent proves analytical value before trusted with pricing changes | ✓ Good — trust established progressively |
 
 ---
-*Last updated: 2026-02-25 after v1.0 milestone*
+*Last updated: 2026-02-25 after v1.1 milestone start*
