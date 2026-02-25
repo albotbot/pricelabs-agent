@@ -107,49 +107,49 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
-| INFRA-05 | Phase 1 | Pending |
-| INFRA-06 | Phase 1 | Pending |
-| MON-01 | Phase 2 | Pending |
-| MON-02 | Phase 2 | Pending |
-| MON-03 | Phase 2 | Pending |
-| MON-04 | Phase 2 | Pending |
-| MON-05 | Phase 2 | Pending |
-| INT-01 | Phase 2 | Pending |
-| INT-02 | Phase 2 | Pending |
-| INT-03 | Phase 2 | Pending |
-| INT-04 | Phase 2 | Pending |
-| PERS-01 | Phase 2 | Pending |
-| PERS-02 | Phase 2 | Pending |
-| PERS-03 | Phase 2 | Pending |
-| PERS-04 | Phase 2 | Pending |
-| PERS-05 | Phase 2 | Pending |
-| DEL-01 | Phase 2 | Pending |
-| DEL-02 | Phase 2 | Pending |
-| DEL-03 | Phase 2 | Pending |
-| ANLY-01 | Phase 3 | Pending |
-| ANLY-02 | Phase 3 | Pending |
-| ANLY-03 | Phase 3 | Pending |
-| ANLY-04 | Phase 3 | Pending |
-| ANLY-05 | Phase 3 | Pending |
-| ANLY-06 | Phase 3 | Pending |
-| OPT-01 | Phase 4 | Pending |
-| OPT-02 | Phase 4 | Pending |
-| OPT-03 | Phase 4 | Pending |
-| OPT-04 | Phase 4 | Pending |
-| OPT-05 | Phase 4 | Pending |
-| OPT-06 | Phase 4 | Pending |
-| OPT-07 | Phase 4 | Pending |
-| OPT-08 | Phase 4 | Pending |
-| OPT-09 | Phase 4 | Pending |
-| OPT-10 | Phase 4 | Pending |
-| SCALE-01 | Phase 5 | Pending |
-| SCALE-02 | Phase 5 | Pending |
-| SCALE-03 | Phase 5 | Pending |
-| SCALE-04 | Phase 5 | Pending |
+| INFRA-01 | Phase 1 | Delivered |
+| INFRA-02 | Phase 1 | Delivered |
+| INFRA-03 | Phase 1 | Delivered |
+| INFRA-04 | Phase 1 | Delivered |
+| INFRA-05 | Phase 1 | Delivered |
+| INFRA-06 | Phase 1 | Delivered |
+| MON-01 | Phase 2 | Delivered |
+| MON-02 | Phase 2 | Delivered |
+| MON-03 | Phase 2 | Delivered |
+| MON-04 | Phase 2 | Delivered |
+| MON-05 | Phase 2 | Delivered |
+| INT-01 | Phase 2 | Delivered |
+| INT-02 | Phase 2 | Delivered |
+| INT-03 | Phase 2 | Delivered |
+| INT-04 | Phase 2 | Delivered |
+| PERS-01 | Phase 2 | Delivered |
+| PERS-02 | Phase 2 | Delivered |
+| PERS-03 | Phase 2 | Delivered |
+| PERS-04 | Phase 2 | Delivered |
+| PERS-05 | Phase 2 | Delivered |
+| DEL-01 | Phase 2 | Delivered |
+| DEL-02 | Phase 2 | Delivered |
+| DEL-03 | Phase 2 | Delivered |
+| ANLY-01 | Phase 3 | Delivered |
+| ANLY-02 | Phase 3 | Delivered |
+| ANLY-03 | Phase 3 | Delivered |
+| ANLY-04 | Phase 3 | Delivered |
+| ANLY-05 | Phase 3 | Delivered |
+| ANLY-06 | Phase 3 | Delivered |
+| OPT-01 | Phase 4 | Delivered |
+| OPT-02 | Phase 4 | Delivered |
+| OPT-03 | Phase 4 | Delivered |
+| OPT-04 | Phase 4 | Delivered |
+| OPT-05 | Phase 4 | Delivered |
+| OPT-06 | Phase 4 | Delivered |
+| OPT-07 | Phase 4 | Delivered |
+| OPT-08 | Phase 4 | Delivered |
+| OPT-09 | Phase 4 | Delivered |
+| OPT-10 | Phase 4 | Delivered |
+| SCALE-01 | Phase 5 | Delivered |
+| SCALE-02 | Phase 5 | Delivered |
+| SCALE-03 | Phase 5 | Delivered |
+| SCALE-04 | Phase 5 | Delivered |
 
 **Coverage:**
 - v1 requirements: 43 total
@@ -158,4 +158,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-22*
-*Last updated: 2026-02-22 after initial definition*
+*Last updated: 2026-02-25 — all 43 requirements delivered*
