@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An AI-powered revenue management agent that runs on OpenClaw, connecting to PriceLabs' API to autonomously monitor short-term rental portfolios, provide interactive analytics via messaging, and optimize pricing with human-in-the-loop approval. Accessible through Slack and Telegram, it acts as a 24/7 revenue manager for STR hosts and property managers.
+An AI-powered revenue management agent that runs on OpenClaw, connecting to PriceLabs' API to monitor short-term rental portfolios, provide interactive analytics via Slack and Telegram, and optimize pricing with human-in-the-loop approval. It acts as a 24/7 revenue manager — detecting underperformance, recommending pricing changes, executing approved changes, and tracking their impact over time.
 
 ## Core Value
 
@@ -12,23 +12,28 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ MCP server wraps all 12 PriceLabs Customer API endpoints with Zod validation, rate limiting, and caching — v1.0
+- ✓ Agent sends daily portfolio health summaries via Slack and Telegram — v1.0
+- ✓ Agent detects underperforming listings and alerts with specific recommendations — v1.0
+- ✓ User can ask natural language questions about portfolio and get live data — v1.0
+- ✓ Agent recommends base price adjustments based on neighborhood data percentile analysis — v1.0
+- ✓ Agent recommends date-specific overrides for demand spikes and orphan days — v1.0
+- ✓ All pricing changes require explicit user approval before execution — v1.0
+- ✓ Agent executes approved changes via PriceLabs API with pre-write snapshots and post-write verification — v1.0
+- ✓ Agent tracks booking pace vs STLY and alerts on significant deviations — v1.0
+- ✓ Agent provides weekly optimization reports with RevPAR/ADR/occupancy trends — v1.0
+- ✓ Agent runs as OpenClaw skills with MCP integration for PriceLabs API — v1.0
+- ✓ Agent supports batch approve/reject for multi-listing recommendations — v1.0
+- ✓ Agent tracks revenue impact of changes at 7/14/30 day intervals — v1.0
+- ✓ Agent detects cancellations and suggests reactive fill strategies — v1.0
+- ✓ User can configure alert thresholds per listing or globally — v1.0
 
 ### Active
 
-- [ ] Agent connects to PriceLabs Customer API and fetches all listing data
-- [ ] Agent sends daily portfolio health summaries via Slack and Telegram
-- [ ] Agent detects underperforming listings and alerts with specific recommendations
-- [ ] User can ask natural language questions about their portfolio and get live data
-- [ ] Agent recommends base price adjustments based on neighborhood data analysis
-- [ ] Agent recommends date-specific overrides for detected events/demand spikes
-- [ ] Agent manages orphan day detection and suggests fill strategies
-- [ ] All pricing change recommendations require explicit user approval before execution
-- [ ] Agent executes approved changes via PriceLabs API (base price, DSOs, min-stay)
-- [ ] Agent tracks booking pace vs STLY and alerts on significant deviations
-- [ ] Agent provides weekly optimization reports with RevPAR/ADR/occupancy trends
-- [ ] Agent runs as OpenClaw skill(s) with MCP integration for PriceLabs API
-- [ ] Multi-user support for scaling to other hosts/PMs
+- [ ] Multi-user support for scaling to other hosts/PMs (MULTI-01..03)
+- [ ] Auto-approval for low-risk changes below user-defined thresholds (AUTO-01)
+- [ ] Seasonal profile management via agent (AUTO-02)
+- [ ] Monthly strategy report with portfolio-level KPI forecasting (AUTO-03)
 
 ### Out of Scope
 
@@ -37,8 +42,29 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 - Direct OTA integrations (Airbnb/Vrbo) — PriceLabs handles the channel connections
 - Payment processing or subscription billing — future product concern
 - PriceLabs Integration API (IAPI) — that's for PMS partners, not end users
+- Fully autonomous pricing (no approval) — core value requires human-in-the-loop; trust must be earned
+- Custom pricing algorithm — PriceLabs HLP algorithm is the pricing engine; agent enhances, not replaces
 
 ## Context
+
+### Current State (v1.0 shipped 2026-02-25)
+
+**Tech Stack:** TypeScript MCP server (28 tools), SQLite persistence (7 tables), OpenClaw skills (4), cron jobs (4)
+
+**Code:** ~6,400 TypeScript LOC across 43 source files + 1,343 lines of skill protocols
+
+**Architecture:**
+- MCP server (`mcp-servers/pricelabs/`) — API client, rate limiter, cache, 28 tools across 14 registration functions
+- Skills (`skills/`) — domain knowledge, monitoring protocols, analysis playbook, optimization playbook (9 sections)
+- OpenClaw config (`openclaw/`) — gateway security, cron jobs (2 daily health, 2 weekly optimization), env config
+- SQLite — listing_snapshots, price_snapshots, reservations, market_snapshots, audit_log, change_tracking, user_config
+
+**Known issues / tech debt:**
+- OpenClaw Docker sandbox with stdio MCP server spawning not yet validated
+- OpenClaw cron skip bug #17852 may affect scheduled job reliability
+- Reply-based approval UX (v1) — could be improved with interactive buttons in future
+- PriceLabs reservation_data pagination limits not tested with real large datasets
+- Global-only thresholds in detect_underperformers batch query (per-listing thresholds via config tool only)
 
 ### PriceLabs API (Customer API)
 - Base URL: `https://api.pricelabs.co`
@@ -49,10 +75,9 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 - Full API documentation in `research/02-api-reference.md`
 
 ### OpenClaw Runtime
-- Skills: markdown files (`SKILL.md`) with YAML front matter in `~/.openclaw/workspace/skills/`
+- Skills: markdown files (`SKILL.md`) with YAML front matter
 - MCP: natively supported — configure servers in `openclaw.json`
-- Model: Claude Opus 4.6 recommended
-- Multi-agent routing supported for complex workflows
+- Model: Claude Opus 4.6
 - Messaging: Slack (Bolt) and Telegram (grammY) channels
 
 ### Research Completed
@@ -63,14 +88,6 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 - HLP algorithm internals and all settings (`research/05-algorithm-and-settings.md`)
 - Competitor analysis vs Beyond/Wheelhouse/DPGO (`research/06-competitor-analysis.md`)
 - Common mistakes and community workarounds (`research/07-common-mistakes.md`)
-
-### Key PriceLabs Optimization Insights
-- 31.1% revenue increase in controlled 90-day test vs static pricing
-- Orphan day management is highest-impact quick win (7% revenue increase alone)
-- Weekly monitoring loop is essential — not "set and forget"
-- Base price should be stable anchor at 50th market percentile; adjust monthly max
-- Multiple discounts: largest wins. Multiple premiums: all stack.
-- Demand colors (red/orange/yellow/green/blue) signal pricing opportunities
 
 ## Constraints
 
@@ -85,12 +102,16 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| OpenClaw as runtime | User's chosen platform; skills are markdown, MCP native | — Pending |
-| Human-in-the-loop for all pricing changes | Safety first; user approves every change before API writes | — Pending |
-| Slack + Telegram dual channel | User's preferred messaging platforms | — Pending |
-| Customer API (not IAPI) | Building for end users, not PMS partners | — Pending |
-| Start personal, scale to product | Build for own portfolio first, then generalize | — Pending |
-| MCP for PriceLabs API access | OpenClaw natively supports MCP; clean integration | — Pending |
+| OpenClaw as runtime | User's chosen platform; skills are markdown, MCP native | ✓ Good — 4 skills, 28 MCP tools work well |
+| Human-in-the-loop for all pricing changes | Safety first; user approves every change before API writes | ✓ Good — batch approval added in v1.0 |
+| Slack + Telegram dual channel | User's preferred messaging platforms | ✓ Good — independent cron jobs per channel |
+| Customer API (not IAPI) | Building for end users, not PMS partners | ✓ Good — 12 endpoints sufficient |
+| MCP for PriceLabs API access | OpenClaw natively supports MCP; clean integration | ✓ Good — 28 tools, typed schemas |
+| Zod schemas as single source of truth for types | No manual interface duplication; z.infer prevents type drift | ✓ Good — consistent across all 28 tools |
+| SQLite with user_version pragma migrations | Simpler than migration tables; atomic with schema changes | ✓ Good — 7 migrations, clean upgrades |
+| Reply-based approval over interactive buttons | Cross-channel compatible (Slack + Telegram); simpler v1 | ⚠️ Revisit — may want buttons for v2 UX |
+| Agent-driven change tracking | Agent calls pricelabs_record_change explicitly; matches audit pattern | ✓ Good — flexible, not auto-tracking |
+| 5-phase read-before-write progression | Agent proves analytical value before trusted with pricing changes | ✓ Good — trust established progressively |
 
 ---
-*Last updated: 2026-02-22 after initialization*
+*Last updated: 2026-02-25 after v1.0 milestone*
