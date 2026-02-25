@@ -83,38 +83,38 @@ Deferred to future release. Not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BOOT-01 | — | Pending |
-| BOOT-02 | — | Pending |
-| BOOT-03 | — | Pending |
-| LIVE-01 | — | Pending |
-| LIVE-02 | — | Pending |
-| LIVE-03 | — | Pending |
-| LIVE-04 | — | Pending |
-| LIVE-05 | — | Pending |
-| LIVE-06 | — | Pending |
-| STORE-01 | — | Pending |
-| STORE-02 | — | Pending |
-| STORE-03 | — | Pending |
-| STORE-04 | — | Pending |
-| DEPLOY-01 | — | Pending |
-| DEPLOY-02 | — | Pending |
-| DEPLOY-03 | — | Pending |
-| DEPLOY-04 | — | Pending |
-| DEPLOY-05 | — | Pending |
-| MSG-01 | — | Pending |
-| MSG-02 | — | Pending |
-| MSG-03 | — | Pending |
-| MSG-04 | — | Pending |
-| MSG-05 | — | Pending |
-| SAFE-01 | — | Pending |
-| SAFE-02 | — | Pending |
-| SAFE-03 | — | Pending |
+| BOOT-01 | Phase 6 | Pending |
+| BOOT-02 | Phase 6 | Pending |
+| BOOT-03 | Phase 6 | Pending |
+| LIVE-01 | Phase 7 | Pending |
+| LIVE-02 | Phase 7 | Pending |
+| LIVE-03 | Phase 7 | Pending |
+| LIVE-04 | Phase 7 | Pending |
+| LIVE-05 | Phase 7 | Pending |
+| LIVE-06 | Phase 7 | Pending |
+| STORE-01 | Phase 8 | Pending |
+| STORE-02 | Phase 8 | Pending |
+| STORE-03 | Phase 8 | Pending |
+| STORE-04 | Phase 8 | Pending |
+| SAFE-01 | Phase 6 | Pending |
+| SAFE-02 | Phase 8 | Pending |
+| SAFE-03 | Phase 10 | Pending |
+| DEPLOY-01 | Phase 9 | Pending |
+| DEPLOY-02 | Phase 9 | Pending |
+| DEPLOY-03 | Phase 9 | Pending |
+| DEPLOY-04 | Phase 9 | Pending |
+| DEPLOY-05 | Phase 9 | Pending |
+| MSG-01 | Phase 10 | Pending |
+| MSG-02 | Phase 10 | Pending |
+| MSG-03 | Phase 10 | Pending |
+| MSG-04 | Phase 10 | Pending |
+| MSG-05 | Phase 10 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 (awaiting roadmap)
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 after initial definition*
+*Last updated: 2026-02-25 -- phase traceability added for v1.1 roadmap*
