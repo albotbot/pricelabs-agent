@@ -26,7 +26,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 
 **Milestone Goal:** Prove v1.0 code works end-to-end with real PriceLabs API, OpenClaw deployment, and Slack/Telegram delivery. Every tool, every table, every cron job -- validated against real services.
 
-- [ ] **Phase 6: Server Boot + Safety Gate** - MCP server builds, boots, creates database, registers all tools, and write tools are confirmed disabled
+- [x] **Phase 6: Server Boot + Safety Gate** - MCP server builds, boots, creates database, registers all tools, and write tools are confirmed disabled (completed 2026-02-25)
 - [ ] **Phase 7: Live API Validation** - Real PriceLabs API calls succeed through MCP tool handlers with correct data shapes
 - [ ] **Phase 8: Snapshot Persistence** - Real portfolio data stored in SQLite and reads back correctly with pre-write safety verified
 - [ ] **Phase 9: OpenClaw Deployment** - MCP server runs in Docker sandbox with skills loaded and cron jobs firing
@@ -43,7 +43,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
   2. On first start, SQLite database file exists on disk with all 7 tables (listing_snapshots, price_snapshots, reservations, market_snapshots, audit_log, change_tracking, user_config)
   3. Sending a `tools/list` request returns all 28 registered tools with correct schemas
   4. Calling `pricelabs_set_overrides`, `pricelabs_update_listings`, or `pricelabs_delete_overrides` returns an error indicating writes are disabled
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 06-01-PLAN.md -- Write safety gate (env var gating for write tools, openclaw config, skill instruction)
 - [ ] 06-02-PLAN.md -- Boot validation (automated script proving all 4 requirements)
@@ -105,7 +105,7 @@ Plans:
 | 3. Analysis Layer + Smart Alerting | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 4. Write Operations + Approval Workflow | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 5. Scale + Feedback Loop | v1.0 | 3/3 | Complete | 2026-02-25 |
-| 6. Server Boot + Safety Gate | v1.1 | 0/2 | Planning | - |
+| 6. Server Boot + Safety Gate | 2/2 | Complete   | 2026-02-25 | - |
 | 7. Live API Validation | v1.1 | 0/? | Not started | - |
 | 8. Snapshot Persistence | v1.1 | 0/? | Not started | - |
 | 9. OpenClaw Deployment | v1.1 | 0/? | Not started | - |

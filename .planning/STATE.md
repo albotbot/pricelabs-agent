@@ -4,22 +4,22 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Phase 6 - Server Boot + Safety Gate (v1.1 Integration & Validation)
+**Current Focus:** Phase 6 complete — ready for Phase 7 (v1.1 Integration & Validation)
 
 ## Current Position
 
 **Milestone:** v1.1 Integration & Validation
-**Phase:** 6 of 10 (Server Boot + Safety Gate)
-**Plan:** 0 of ? in current phase
-**Status:** Ready to plan
-**Last activity:** 2026-02-25 -- v1.1 roadmap created
+**Phase:** 6 of 10 (Server Boot + Safety Gate) — COMPLETE
+**Plan:** 2 of 2 complete
+**Status:** Verifying
+**Last activity:** 2026-02-25 -- Completed 06-02 (Boot Validation)
 
-Progress: [##########..........] 50% (5/10 phases complete across all milestones)
+Progress: [############........] 60% (6/10 phases complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 27
 - Plans failed: 0
 - Average duration: ~6.5 min/plan
 - Total execution time: ~2.6 hours
@@ -44,6 +44,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [01-08] Deny-by-default tool policy in OpenClaw -- gateway blocks exec/write/edit
 - [02-01] WAL mode + synchronous NORMAL for SQLite -- standard for embedded SQLite
 - [04-01] Snapshot tool uses fetchWithFallback for cache-first fetching
+- [06-01] Strict string equality (=== "true") for write gate -- only exact "true" enables writes
+- [06-01] Per-call gate (not startup-time) -- allows runtime toggling without restart
+- [06-01] Dual safety layer: env var gate + skill-level agent instruction
+- [06-02] Boot validation via stdio JSON-RPC — spawns MCP server as child process
+- [06-02] Test args must satisfy Zod schemas before reaching tool handler logic
 
 ### Accumulated TODOs
 
@@ -58,11 +63,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-25T08:46:38.460Z
-**Stopped At:** Phase 6 context gathered
-**Next Action:** Plan Phase 6 (Server Boot + Safety Gate)
-**Resume file:** .planning/phases/06-server-boot-safety-gate/06-CONTEXT.md
+**Last Session:** 2026-02-25T18:15:00Z
+**Stopped At:** Phase 6 complete — both plans executed, all requirements verified
+**Next Action:** Phase verification, then Phase 7 (Live API Validation)
+**Resume file:** .planning/phases/06-server-boot-safety-gate/06-02-SUMMARY.md
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-25 -- v1.1 roadmap created*
+*Last updated: 2026-02-25 -- completed Phase 6 (Server Boot + Safety Gate)*
