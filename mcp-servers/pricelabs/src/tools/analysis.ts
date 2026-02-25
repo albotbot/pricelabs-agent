@@ -20,6 +20,7 @@ import {
   DetectUnderperformersInputSchema,
 } from "../schemas/analysis.js";
 import { createAnalysisQueries } from "../db/queries/analysis.js";
+import { createUserConfigQueries } from "../db/queries/user-config.js";
 
 /**
  * Register analysis MCP tools on the server.
@@ -36,6 +37,7 @@ export function registerAnalysisTools(
   db: Database.Database,
 ): void {
   const analysisQueries = createAnalysisQueries(db);
+  const userConfigQueries = createUserConfigQueries(db);
 
   // --- pricelabs_get_portfolio_kpis ---
 
@@ -145,9 +147,24 @@ export function registerAnalysisTools(
             .get() as string | null) ??
           new Date().toISOString().slice(0, 10);
 
-        // Apply threshold defaults
-        const occGapThreshold = params.occupancy_gap_threshold ?? 20;
-        const revenueStlyThreshold = params.revenue_stly_threshold ?? -25;
+        // Apply threshold defaults: parameter > user_config > hardcoded
+        const occGapThreshold = params.occupancy_gap_threshold ?? (() => {
+          const userValue = userConfigQueries.getConfigValue.get({
+            config_key: "occupancy_gap_threshold",
+            listing_id: null as unknown as string,
+            pms: null as unknown as string,
+          });
+          return userValue ? Number(userValue.config_value) : 20;
+        })();
+
+        const revenueStlyThreshold = params.revenue_stly_threshold ?? (() => {
+          const userValue = userConfigQueries.getConfigValue.get({
+            config_key: "revenue_drop_threshold",
+            listing_id: null as unknown as string,
+            pms: null as unknown as string,
+          });
+          return userValue ? Number(userValue.config_value) : -25;
+        })();
 
         // Detect underperformers
         const underperformers = analysisQueries.getUnderperformers.all({
@@ -186,6 +203,9 @@ export function registerAnalysisTools(
             occupancy_gap_pct: occGapThreshold,
             revenue_vs_stly_pct: revenueStlyThreshold,
             health_score: 50,
+            source: params.occupancy_gap_threshold || params.revenue_stly_threshold
+              ? "parameter"
+              : "user_config_or_default",
           },
           underperformers: enrichedRows,
           count: enrichedRows.length,
