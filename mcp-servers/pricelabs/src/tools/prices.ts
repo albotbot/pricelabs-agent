@@ -65,11 +65,15 @@ export function registerPriceTools(
         () =>
           apiClient
             .post<PricesResponse[]>("/v1/listing_prices", {
-              listing_id,
-              pms,
-              start_date,
-              end_date,
-              currency,
+              // API expects { listings: [{ id, pms, dateFrom, dateTo }] }
+              listings: [
+                {
+                  id: listing_id,
+                  pms,
+                  dateFrom: start_date,
+                  dateTo: end_date,
+                },
+              ],
             })
             .then((r) => {
               // API returns array of pricing objects, one per listing
