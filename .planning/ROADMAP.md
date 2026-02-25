@@ -43,7 +43,10 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
   2. On first start, SQLite database file exists on disk with all 7 tables (listing_snapshots, price_snapshots, reservations, market_snapshots, audit_log, change_tracking, user_config)
   3. Sending a `tools/list` request returns all 28 registered tools with correct schemas
   4. Calling `pricelabs_set_overrides`, `pricelabs_update_listings`, or `pricelabs_delete_overrides` returns an error indicating writes are disabled
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 06-01-PLAN.md -- Write safety gate (env var gating for write tools, openclaw config, skill instruction)
+- [ ] 06-02-PLAN.md -- Boot validation (automated script proving all 4 requirements)
 
 ### Phase 7: Live API Validation
 **Goal**: Every read-path MCP tool successfully calls the real PriceLabs API and returns correctly shaped data for the user's actual portfolio
@@ -102,7 +105,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 | 3. Analysis Layer + Smart Alerting | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 4. Write Operations + Approval Workflow | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 5. Scale + Feedback Loop | v1.0 | 3/3 | Complete | 2026-02-25 |
-| 6. Server Boot + Safety Gate | v1.1 | 0/? | Not started | - |
+| 6. Server Boot + Safety Gate | v1.1 | 0/2 | Planning | - |
 | 7. Live API Validation | v1.1 | 0/? | Not started | - |
 | 8. Snapshot Persistence | v1.1 | 0/? | Not started | - |
 | 9. OpenClaw Deployment | v1.1 | 0/? | Not started | - |
@@ -110,4 +113,4 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-25 -- v1.1 roadmap added*
+*Last updated: 2026-02-25 -- Phase 6 plans created*
