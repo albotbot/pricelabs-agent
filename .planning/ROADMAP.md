@@ -57,7 +57,10 @@ Plans:
   2. `pricelabs_get_prices`, `pricelabs_get_neighborhood`, and `pricelabs_get_reservations` each return real data for a known listing ID
   3. Rate limiter correctly tracks request count and cache returns cached responses on repeated calls within TTL
   4. Computed fields (price_percentile_position, occupancy_rate, revenue_pace, etc.) produce non-null numeric values from real API response shapes
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 07-01-PLAN.md -- Live API validation script (all read tools, rate limiter, cache verification)
+- [ ] 07-02-PLAN.md -- Computed fields validation + Swagger API coverage report
 
 ### Phase 8: Snapshot Persistence
 **Goal**: Real portfolio data flows through the store tools into SQLite and reads back correctly, with pre-write snapshot capture verified
@@ -105,12 +108,12 @@ Plans:
 | 3. Analysis Layer + Smart Alerting | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 4. Write Operations + Approval Workflow | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 5. Scale + Feedback Loop | v1.0 | 3/3 | Complete | 2026-02-25 |
-| 6. Server Boot + Safety Gate | 2/2 | Complete    | 2026-02-25 | - |
-| 7. Live API Validation | v1.1 | 0/? | Not started | - |
+| 6. Server Boot + Safety Gate | v1.1 | 2/2 | Complete | 2026-02-25 |
+| 7. Live API Validation | v1.1 | 0/2 | Planned | - |
 | 8. Snapshot Persistence | v1.1 | 0/? | Not started | - |
 | 9. OpenClaw Deployment | v1.1 | 0/? | Not started | - |
 | 10. Messaging Integration | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-25 -- Phase 6 plans created*
+*Last updated: 2026-02-25 -- Phase 7 plans created*
