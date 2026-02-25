@@ -63,10 +63,10 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-25
-**Stopped At:** Phase 7 complete
+**Last Session:** 2026-02-25T22:44:33.483Z
+**Stopped At:** Phase 8 context gathered
 **Next Action:** Plan and execute Phase 8 (Snapshot Persistence)
-**Resume file:** .planning/ROADMAP.md
+**Resume file:** .planning/phases/08-snapshot-persistence/08-CONTEXT.md
 
 ---
 *State initialized: 2026-02-22*
