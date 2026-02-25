@@ -79,6 +79,14 @@ export function registerSnapshotTools(
       try {
         const snapshot_date = params.snapshot_date ?? todayDate();
 
+        // Normalize string→number for fields that may arrive as strings from API
+        // (e.g., "43 %" for occupancy, "Fully Blocked" for revenue)
+        const toNum = (v: unknown): number | null => {
+          if (v === null || v === undefined) return null;
+          const n = typeof v === "string" ? parseFloat(v) : Number(v);
+          return isNaN(n) ? null : n;
+        };
+
         const mappedSnapshots = params.snapshots.map((s) => ({
           listing_id: s.listing_id,
           pms: s.pms,
@@ -87,11 +95,11 @@ export function registerSnapshotTools(
           health_7_day: s.health_7_day ?? null,
           health_30_day: s.health_30_day ?? null,
           health_60_day: s.health_60_day ?? null,
-          occupancy_next_30: s.occupancy_next_30 ?? null,
-          market_occupancy_next_30: s.market_occupancy_next_30 ?? null,
+          occupancy_next_30: toNum(s.occupancy_next_30),
+          market_occupancy_next_30: toNum(s.market_occupancy_next_30),
           occupancy_gap_pct: s.occupancy_gap_pct ?? null,
-          revenue_past_7: s.revenue_past_7 ?? null,
-          stly_revenue_past_7: s.stly_revenue_past_7 ?? null,
+          revenue_past_7: toNum(s.revenue_past_7),
+          stly_revenue_past_7: toNum(s.stly_revenue_past_7),
           revenue_vs_stly_pct: s.revenue_vs_stly_pct ?? null,
           base_price: s.base_price ?? null,
           recommended_base_price: s.recommended_base_price ?? null,

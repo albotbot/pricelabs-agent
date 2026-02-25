@@ -23,25 +23,25 @@ export const StoreDailySnapshotsInputSchema = z.object({
           .optional()
           .describe("60-day health score"),
         occupancy_next_30: z
-          .number()
+          .union([z.number(), z.string()])
           .optional()
-          .describe("Listing occupancy next 30 days (0-100)"),
+          .describe("Listing occupancy next 30 days (0-100, may be '43 %' string from API)"),
         market_occupancy_next_30: z
-          .number()
+          .union([z.number(), z.string()])
           .optional()
-          .describe("Market occupancy next 30 days (0-100)"),
+          .describe("Market occupancy next 30 days (0-100, may be '43 %' string from API)"),
         occupancy_gap_pct: z
           .number()
           .optional()
           .describe("Computed occupancy gap vs market (%)"),
         revenue_past_7: z
-          .number()
+          .union([z.number(), z.string()])
           .optional()
-          .describe("Revenue in past 7 days"),
+          .describe("Revenue in past 7 days (may be 'Fully Blocked' string from API)"),
         stly_revenue_past_7: z
-          .number()
+          .union([z.number(), z.string()])
           .optional()
-          .describe("STLY revenue for past 7 days"),
+          .describe("STLY revenue for past 7 days (may be string from API)"),
         revenue_vs_stly_pct: z
           .number()
           .optional()

@@ -133,12 +133,17 @@ export function computePriceFields(
 
   // --- demand_level ---
   // Map demand_color hex to human label, fall back to demand_desc if present
+  // API may return 9-char ARGB hex (e.g., "#c0f1958c") — strip alpha prefix to get 7-char RGB
   const demandColor = priceEntry.demand_color;
   const demandDesc = priceEntry.demand_desc;
-  if (demandColor && DEMAND_COLOR_MAP[demandColor]) {
-    computed.demand_level = DEMAND_COLOR_MAP[demandColor];
-  } else if (demandColor && DEMAND_COLOR_MAP[demandColor.toLowerCase()]) {
-    computed.demand_level = DEMAND_COLOR_MAP[demandColor.toLowerCase()];
+  const rgbColor =
+    demandColor && demandColor.length === 9
+      ? "#" + demandColor.slice(3)
+      : demandColor;
+  if (rgbColor && DEMAND_COLOR_MAP[rgbColor]) {
+    computed.demand_level = DEMAND_COLOR_MAP[rgbColor];
+  } else if (rgbColor && DEMAND_COLOR_MAP[rgbColor.toLowerCase()]) {
+    computed.demand_level = DEMAND_COLOR_MAP[rgbColor.toLowerCase()];
   } else if (demandDesc) {
     // Fall back to demand_desc: normalize to lowercase label
     computed.demand_level = demandDesc.toLowerCase().replace(/\s+/g, "-");
