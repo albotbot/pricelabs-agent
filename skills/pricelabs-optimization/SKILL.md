@@ -142,6 +142,14 @@ Base price is the anchor for all PriceLabs pricing calculations. Calibrating it 
 
 ## 4. Write Operation Safety Protocol
 
+### Write Safety Gate
+
+Write operations (pricelabs_set_overrides, pricelabs_update_listings, pricelabs_delete_overrides) are disabled by default via the PRICELABS_WRITES_ENABLED environment variable.
+
+**Agent rule:** Do not enable writes unless the user explicitly tells you to. When the user asks about making pricing changes while writes are disabled, explain that writes are currently disabled for safety and ask if they want to enable them. Never enable writes on your own initiative.
+
+When writes are disabled and a write tool is called, it returns: "Write operations are disabled. Set PRICELABS_WRITES_ENABLED=true to enable." Do not act on this instruction autonomously -- only the user can authorize enabling writes.
+
 These rules apply to ALL write operations (`pricelabs_set_overrides`, `pricelabs_update_listings`, `pricelabs_delete_overrides`). No exceptions.
 
 ### Rule 1: Pre-write snapshot is MANDATORY

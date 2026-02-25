@@ -59,7 +59,8 @@
               "env": {
                 "PRICELABS_API_KEY": "${PRICELABS_API_KEY}",
                 "PRICELABS_BASE_URL": "https://api.pricelabs.co",
-                "PRICELABS_DB_PATH": "${HOME}/.pricelabs-agent/data.sqlite"
+                "PRICELABS_DB_PATH": "${HOME}/.pricelabs-agent/data.sqlite",
+                "PRICELABS_WRITES_ENABLED": "false"
               }
             }
           ]
