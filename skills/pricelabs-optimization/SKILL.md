@@ -381,3 +381,177 @@ Call `pricelabs_log_action` with `action_type: 'rollback'`, including:
 ### Step 7: Verify
 
 Post-write verification applies to rollbacks too. Check the `verification` field in the write response to confirm the values were restored correctly. Report the outcome to the user with the sync timing caveat.
+
+---
+
+## 8. Batch Approval Protocol (SCALE-01)
+
+When presenting multiple recommendations from an optimization scan (weekly cron or user-requested), this protocol governs how the agent handles batch approval, tracks execution state, handles partial failures, and produces a completion report.
+
+### Batch state tracking
+
+When presenting multiple recommendations, number them clearly per Section 6 rule 3. After the user responds with an approval, the agent MUST echo back exactly which recommendations it will execute before proceeding. Example:
+
+```
+I will execute recommendations 1, 3, and 5. Recommendations 2 and 4 will be skipped. Confirm?
+```
+
+Wait for the user to confirm before beginning execution. This confirmation step prevents misinterpretation of ambiguous batch commands (e.g., "approve the first three" could mean items 1-3 or the first three listings).
+
+### Batch approval syntax
+
+Recognize these approval patterns from the user:
+
+- **"approve all"** -- Execute all presented recommendations sequentially.
+- **"approve 1, 3, 5"** or **"approve 1 and 3"** -- Cherry-pick specific recommendation numbers.
+- **"reject all"** or **"skip all"** -- Reject all recommendations. Log each rejection.
+- **"approve 1-3, reject 4-5"** -- Mixed approval with ranges. Execute 1, 2, 3; skip 4, 5.
+- **Any ambiguous response** -- Echo back the agent's interpretation and ask for confirmation. Example: "I interpreted that as approving recommendations 1 and 2 and rejecting 3-5. Is that correct?"
+
+### Sequential execution with error handling
+
+For each approved recommendation, execute the standard approval flow from Section 5:
+
+1. **Pre-write snapshot.** Call `pricelabs_snapshot_before_write` (or re-snapshot if the existing snapshot is older than 30 minutes).
+2. **Execute the write.** Call the appropriate write tool (`pricelabs_set_overrides`, `pricelabs_update_listings`, or `pricelabs_delete_overrides`).
+3. **Verify.** Check the `verification` field in the write response.
+4. **Log execution.** Call `pricelabs_log_action` with `action_type='execution'` and full before/after details.
+
+**If a write fails:** Log the failure with `pricelabs_log_action` using `action_type='execution'` with the error details in `details_json`. Report the error to the user. Then **continue with the remaining approved recommendations.** Do NOT abort the entire batch on a single failure. Track the failure in the running tally.
+
+Keep a running tally of results as execution proceeds: successes, failures, and skips (user-rejected).
+
+### Post-execution change tracking
+
+After each successful execution within the batch, call `pricelabs_record_change` with:
+- `audit_log_id` -- The ID from the execution log entry
+- `listing_id` and `pms` -- The listing that was changed
+- `change_type` -- `set_overrides`, `update_listing`, or `delete_overrides`
+- `affected_dates_start` and `affected_dates_end` -- For DSO changes, the date range affected
+- `before_json` -- The snapshot values before the change
+- `after_json` -- The values after the change (from the write response)
+
+This registers the change for 7/14/30 day revenue impact follow-up tracking. Do NOT create change tracking entries for failed writes or rejected recommendations.
+
+### Batch completion report
+
+After all approved recommendations have been processed (or attempted), present a batch summary report:
+
+```
+Batch complete: Executed 3 of 5 recommendations.
+- Rec 1 (Mountain View Cabin orphan fill Mar 15): SUCCESS -- DSO -20% applied
+- Rec 2 (Beach House demand spike Mar 21-23): REJECTED by user
+- Rec 3 (Mountain View Cabin demand spike Apr 5-7): SUCCESS -- DSO +25% applied
+- Rec 4 (Beach House base price adjustment): REJECTED by user
+- Rec 5 (Lake House orphan fill Mar 18): FAILED -- rate limit exceeded, retry later
+
+Changes tracked for 7/14/30 day revenue impact follow-up.
+All changes sync to BookingSync during the next nightly cycle (6pm-6am CT).
+```
+
+Include the sync timing caveat from Section 4 Rule 4 once at the end of the batch report rather than after each individual execution.
+
+To review impact results for any batch at a later date, call `pricelabs_get_change_impact` with the relevant listing ID to see 7/14/30 day follow-up assessments.
+
+### Batch audit logging
+
+After the batch is complete, log a single batch summary entry with `pricelabs_log_action`:
+- `action_type: 'report'`
+- `description`: "Batch execution complete: X of Y recommendations executed"
+- `details_json`:
+  ```json
+  {
+    "batch_context": {
+      "total_recommendations": 5,
+      "approved": 3,
+      "rejected": 2,
+      "succeeded": 2,
+      "failed": 1
+    },
+    "results": [
+      { "rec": 1, "listing_id": "12345", "action": "orphan_fill", "status": "success" },
+      { "rec": 2, "listing_id": "67890", "action": "demand_spike", "status": "rejected" },
+      { "rec": 3, "listing_id": "12345", "action": "demand_spike", "status": "success" },
+      { "rec": 4, "listing_id": "67890", "action": "base_price", "status": "rejected" },
+      { "rec": 5, "listing_id": "11111", "action": "orphan_fill", "status": "failed", "error": "rate limit exceeded" }
+    ]
+  }
+  ```
+
+This provides a single audit trail entry for the entire batch operation, supplementing the individual per-recommendation execution logs.
+
+---
+
+## 9. Cancellation Fill Strategy Protocol (SCALE-03)
+
+When new cancellations are detected, this protocol teaches the agent how to assess urgency, check date availability, formulate fill strategies, and track results for follow-up.
+
+### Trigger
+
+This protocol activates when:
+- The `pricelabs_store_reservations` tool returns a `new_cancellations` array during daily health checks (Step 7 of the monitoring skill's Daily Health Check Protocol).
+- The user asks about recent cancellations or requests a cancellation review.
+
+### Step 1: Assess urgency
+
+For each newly cancelled reservation, calculate the number of days from today until the freed check-in date. Classify urgency:
+
+- **URGENT (< 7 days):** Very short booking window remaining. Any revenue is better than $0 at this lead time. Immediate action required.
+- **HIGH (7-14 days):** Still bookable but time-sensitive. Moderate discounting appropriate. Act within this session.
+- **MODERATE (14-30 days):** Normal fill window. Mild discounting or no action if demand is healthy for those dates. Monitor and reassess at next scan.
+- **LOW (> 30 days):** Algorithm and organic demand will likely handle it. Note the cancellation for monitoring only. No DSO recommended.
+
+Also assess:
+- **Lost revenue:** The `rental_revenue` from the cancelled reservation indicates how much revenue was lost.
+- **Orphan gap creation:** Check if the freed dates create a 1-3 night gap between adjacent bookings. If so, the orphan day protocol from Section 1 also applies.
+
+### Step 2: Check date availability
+
+CRITICAL: Before recommending a fill strategy, verify the freed dates are actually bookable.
+
+1. Call `pricelabs_get_prices` for the freed date range (check-in to check-out of the cancelled reservation).
+2. For each date, verify `unbookable != "1"`. If dates are now owner-blocked (host blocked them after cancellation for personal use), skip those dates entirely. Do not recommend fill pricing for owner-blocked dates.
+3. Check for existing DSOs on the freed dates. If DSOs already exist, note them in the recommendation. Do not layer fill discounts on top of existing DSOs without explicitly noting the interaction and the resulting combined effect.
+
+### Step 3: Formulate fill strategy by urgency
+
+Based on the urgency assessment and date availability:
+
+- **URGENT (< 7 days):** Recommend aggressive DSO of -25% to -30%. Present the expected nightly price after the discount. At this lead time, a deeply discounted booking recovers revenue that would otherwise be $0.
+- **HIGH (7-14 days):** Recommend moderate DSO of -15% to -20%. Present the expected nightly price after the discount.
+- **MODERATE (14-30 days):** Recommend mild DSO of -10% to -15%. OR recommend no action if `demand_color` for those dates shows healthy demand (red or orange). If demand is healthy, the dates may re-book at full price without intervention.
+- **LOW (> 30 days):** No DSO recommended. Note the cancellation for the next weekly optimization report. The algorithm will adjust pricing based on organic demand signals.
+
+### Step 4: Present recommendation
+
+Format each cancellation fill recommendation as follows:
+
+```
+Cancellation detected: [listing name]
+[guest info if available] cancelled [check-in] to [check-out] ($[revenue] lost).
+Urgency: [URGENT/HIGH/MODERATE/LOW] -- [X] days until check-in.
+Recommendation: [specific DSO with dates and percentage]
+Expected price: $[price] per night (down from $[current])
+```
+
+For MODERATE and LOW urgency, the recommendation may be "Monitor -- no action needed" with an explanation of why (healthy demand, long lead time).
+
+Follow the standard approval flow from Section 5 for any recommended changes. The user must explicitly approve fill strategy DSOs just like any other write operation.
+
+### Step 5: Track for follow-up
+
+If a fill strategy is approved and executed:
+
+1. Call `pricelabs_record_change` to create a change tracking entry with the fill DSO details. This registers the change for 7/14/30 day revenue impact follow-up.
+2. The 7-day follow-up is particularly important for cancellation fills: it reveals whether the freed dates re-booked after the discount was applied.
+3. Include the cancellation context in the `before_json` (original reservation revenue, cancellation date) so the impact assessment can measure recovery rate.
+
+### Integration with orphan day protocol
+
+If the freed dates from a cancellation create an orphan gap (1-3 night gap between remaining bookings on either side), apply BOTH:
+- The cancellation fill urgency assessment from this protocol (Step 3)
+- The orphan day fill strategy from Section 1
+
+Use the **more aggressive discount** of the two. For example, if the orphan day protocol recommends -20% but the cancellation urgency (URGENT, < 7 days) recommends -25% to -30%, use the cancellation urgency discount of -25% to -30%.
+
+Present both rationales to the user: "This cancellation created a 1-night orphan gap. The orphan discount would be -20%, but the urgency (3 days until check-in) warrants a more aggressive -28% to maximize fill probability."
