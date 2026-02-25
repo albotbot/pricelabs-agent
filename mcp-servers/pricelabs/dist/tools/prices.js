@@ -41,13 +41,23 @@ export function registerPriceTools(server, apiClient, cache, rateLimiter) {
         const cacheKey = `prices:${listing_id}:${pms}:${start_date}:${end_date}`;
         const result = await fetchWithFallback(cacheKey, () => apiClient
             .post("/v1/listing_prices", {
-            listing_id,
-            pms,
-            start_date,
-            end_date,
-            currency,
+            // API expects { listings: [{ id, pms, dateFrom, dateTo }] }
+            listings: [
+                {
+                    id: listing_id,
+                    pms,
+                    dateFrom: start_date,
+                    dateTo: end_date,
+                },
+            ],
         })
-            .then((r) => r.data), cache, rateLimiter, PRICES_CACHE_TTL_MS, (data) => {
+            .then((r) => {
+            // API returns array of pricing objects, one per listing
+            const arr = r.data;
+            if (Array.isArray(arr) && arr.length > 0)
+                return arr[0];
+            return r.data;
+        }), cache, rateLimiter, PRICES_CACHE_TTL_MS, (data) => {
             // Compute fields per daily price entry
             const enrichedEntries = data.data.map((entry) => computePriceFields(entry));
             return { daily_computed: enrichedEntries };

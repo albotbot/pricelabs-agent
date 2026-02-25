@@ -47,7 +47,8 @@ export function registerListingTools(server, apiClient, cache, rateLimiter) {
             const cacheKey = `listings:all:${JSON.stringify(params)}`;
             const result = await fetchWithFallback(cacheKey, async () => {
                 const response = await apiClient.get(`/v1/listings${queryString}`);
-                return response.data;
+                // API returns { listings: [...] } wrapper, unwrap to get the array
+                return response.data.listings;
             }, cache, rateLimiter, LISTING_CACHE_TTL_MS, (listings) => {
                 // Compute fields per listing
                 const listingsComputed = listings.map((listing) => computeListingFields(listing));
@@ -75,7 +76,12 @@ export function registerListingTools(server, apiClient, cache, rateLimiter) {
             const cacheKey = `listing:${params.listing_id}:${params.pms}`;
             const result = await fetchWithFallback(cacheKey, async () => {
                 const response = await apiClient.get(`/v1/listings/${params.listing_id}?pms=${encodeURIComponent(params.pms)}`);
-                return response.data;
+                // API returns { listings: [listing] } wrapper even for single listing
+                const listings = response.data.listings;
+                if (!listings || listings.length === 0) {
+                    throw new Error(`Listing ${params.listing_id} not found`);
+                }
+                return listings[0];
             }, cache, rateLimiter, LISTING_CACHE_TTL_MS, (listing) => computeListingFields(listing));
             return {
                 content: [{ type: "text", text: JSON.stringify(result) }],
@@ -95,6 +101,19 @@ export function registerListingTools(server, apiClient, cache, rateLimiter) {
             openWorldHint: true,
         },
     }, async (params) => {
+        // --- Write safety gate (SAFE-01) ---
+        const writesEnabled = process.env.PRICELABS_WRITES_ENABLED;
+        if (writesEnabled !== "true") {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: "Write operations are disabled. Set PRICELABS_WRITES_ENABLED=true to enable.",
+                    },
+                ],
+                isError: true,
+            };
+        }
         try {
             // Log the reason for audit trail visibility
             const reason = params.reason;

@@ -51,7 +51,9 @@ export function registerOverrideTools(server, apiClient, cache, rateLimiter) {
             path += `&start_date=${start_date}`;
         if (end_date)
             path += `&end_date=${end_date}`;
-        const result = await fetchWithFallback(cacheKey, () => apiClient.get(path).then((r) => r.data), cache, rateLimiter, OVERRIDES_CACHE_TTL_MS);
+        const result = await fetchWithFallback(cacheKey, () => apiClient
+            .get(path)
+            .then((r) => r.data.overrides), cache, rateLimiter, OVERRIDES_CACHE_TTL_MS);
         return {
             content: [
                 {
@@ -74,6 +76,19 @@ export function registerOverrideTools(server, apiClient, cache, rateLimiter) {
         destructiveHint: true,
         readOnlyHint: false,
     }, async (args) => {
+        // --- Write safety gate (SAFE-01) ---
+        const writesEnabled = process.env.PRICELABS_WRITES_ENABLED;
+        if (writesEnabled !== "true") {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: "Write operations are disabled. Set PRICELABS_WRITES_ENABLED=true to enable.",
+                    },
+                ],
+                isError: true,
+            };
+        }
         const { listing_id, pms, overrides, reason } = args;
         // ---- Step 1: Validate percentage range ----
         // Also in Zod schema, but double-check here for defense-in-depth
@@ -112,7 +127,9 @@ export function registerOverrideTools(server, apiClient, cache, rateLimiter) {
             let listingData = null;
             try {
                 const listingResponse = await apiClient.get(`/v1/listings/${listing_id}?pms=${encodeURIComponent(pms)}`);
-                listingData = listingResponse.data;
+                // API returns { listings: [listing] } wrapper
+                const listingsArr = listingResponse.data.listings;
+                listingData = listingsArr && listingsArr.length > 0 ? listingsArr[0] : null;
             }
             catch {
                 // If we can't fetch listing data, we can't validate currency --
@@ -190,7 +207,7 @@ export function registerOverrideTools(server, apiClient, cache, rateLimiter) {
             const verifyPath = `/v1/listings/${listing_id}/overrides?pms=${encodeURIComponent(pms)}` +
                 `&start_date=${minDate}&end_date=${maxDate}`;
             const verifyResponse = await apiClient.get(verifyPath);
-            const confirmedDates = new Set(verifyResponse.data.map((entry) => entry.date));
+            const confirmedDates = new Set(verifyResponse.data.overrides.map((entry) => entry.date));
             droppedDates = requestedDates.filter((date) => !confirmedDates.has(date));
             if (droppedDates.length > 0) {
                 verificationStatus = "partial";
@@ -236,6 +253,19 @@ export function registerOverrideTools(server, apiClient, cache, rateLimiter) {
         destructiveHint: true,
         readOnlyHint: false,
     }, async (args) => {
+        // --- Write safety gate (SAFE-01) ---
+        const writesEnabled = process.env.PRICELABS_WRITES_ENABLED;
+        if (writesEnabled !== "true") {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: "Write operations are disabled. Set PRICELABS_WRITES_ENABLED=true to enable.",
+                    },
+                ],
+                isError: true,
+            };
+        }
         const { listing_id, pms, dates, reason } = args;
         // Execute delete -- use request() directly since delete() doesn't accept body
         try {
