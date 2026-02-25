@@ -4,14 +4,14 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Phase 4 COMPLETE. All 3 plans executed (snapshot tool, optimization skill, cron enhancement + E2E verification). 24 MCP tools, 13 registration functions. 37/43 requirements delivered.
+**Current Focus:** Phase 5 in progress. Plan 1 of 3 complete (change_tracking + user_config DB schema and queries). 37/43 requirements delivered.
 
 ## Current Position
 
 **Milestone:** v1
-**Phase:** 4 - Write Operations + Approval Workflow
-**Plan:** 3 of 3
-**Status:** PHASE COMPLETE
+**Phase:** 5 - Scale + Feedback Loop
+**Plan:** 1 of 3
+**Status:** IN PROGRESS
 
 **Progress:**
 ```
@@ -19,14 +19,14 @@ Phase 1 [##########] 100%  <- COMPLETE
 Phase 2 [##########] 100%  <- COMPLETE
 Phase 3 [##########] 100%  <- COMPLETE
 Phase 4 [##########] 100%  <- COMPLETE
-Phase 5 [..........] 0%
+Phase 5 [###.......] 33%   <- IN PROGRESS
 ```
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 21 |
+| Plans completed | 22 |
 | Plans failed | 0 |
 | Requirements delivered | 37/43 (INFRA-01..06, MON-01..05, INT-01..04, PERS-01..05, DEL-01..03, ANLY-01..06, OPT-01..10) |
 | Phases completed | 4/5 |
@@ -54,6 +54,7 @@ Phase 5 [..........] 0%
 | 04 | 01 | 8min | 2 | 4 |
 | 04 | 02 | 9min | 1 | 1 |
 | 04 | 03 | 5min | 2 | 1 |
+| 05 | 01 | 5min | 2 | 3 |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Phase 5 [..........] 0%
 | 30-minute snapshot freshness threshold | 04-02 | Re-snapshot before execution if stale. Prevents rollback to incorrect values when user takes time to approve |
 | Enhanced existing cron jobs instead of adding new ones | 04-03 | Weekly report already fetches listings/pricing data; adding optimization protocols to same prompt avoids new cron jobs and extra rate limit consumption |
 | Identical messages for both delivery channels | 04-03 | Both Slack and Telegram weekly jobs get exact same optimization instructions for consistent agent behavior |
+| COALESCE generated stored columns for NULL-safe UNIQUE | 05-01 | SQLite treats NULL as distinct in UNIQUE constraints; generated columns map NULL to '__global__' sentinel enabling correct global vs per-listing config dedup |
+| CASE-expression interval dispatch in markCheckDone | 05-01 | Single UPDATE handles 7/14/30d intervals via @interval parameter; avoids three separate prepared statements |
 
 ### Lessons Learned
 
@@ -127,11 +130,11 @@ Phase 5 [..........] 0%
 
 ## Session Continuity
 
-**Last Session:** 2026-02-23T17:57:23Z
-**Stopped At:** Completed 04-03-PLAN.md (Cron enhancement + E2E verification) -- Phase 4 COMPLETE
-**What Happened:** Executed Phase 4 Plan 03. Enhanced both weekly cron job prompts with 4-protocol optimization scanning (analysis + orphan days + demand spikes + base price calibration). Ran comprehensive E2E verification: TypeScript compiles, 24 tools confirmed, all 10 OPT requirements verified with concrete coverage. Phase 4 is fully complete.
-**Next Action:** Begin Phase 5 (deployment and testing)
+**Last Session:** 2026-02-25T00:32:37Z
+**Stopped At:** Completed 05-01-PLAN.md (DB schema for change tracking and user config)
+**What Happened:** Executed Phase 5 Plan 01. Added migrations 6 (change_tracking) and 7 (user_config) with indexes, generated stored columns, and UNIQUE constraints. Created two query modules following Phase 2 factory pattern: change-tracking (4 prepared statements) and user-config (5 prepared statements). TypeScript compiles cleanly.
+**Next Action:** Execute Phase 5 Plan 02
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-23T17:57:23Z*
+*Last updated: 2026-02-25T00:32:37Z*
