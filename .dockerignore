@@ -1,0 +1,43 @@
+# Dependencies (installed fresh in build stage)
+node_modules
+mcp-servers/pricelabs/node_modules
+
+# Build artifacts (rebuilt in build stage)
+mcp-servers/pricelabs/dist
+
+# Environment and secrets
+.env
+.env.*
+.env.save
+.env.save.*
+secrets/
+
+# Git and IDE
+.git
+.gitconfig
+.gitmodules
+.idea
+.vscode
+
+# Planning and documentation (not needed in container)
+.planning
+research
+
+# OS files
+HEAD
+objects
+refs
+hooks
+config
+
+# Claude config
+.claude
+.mcp.json
+
+# Shell configs
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.ripgreprc
