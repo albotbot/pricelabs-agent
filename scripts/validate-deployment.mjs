@@ -150,7 +150,7 @@ try {
   info("Building Docker image (may take 1-2 minutes on first run)...");
   try {
     const buildStart = Date.now();
-    exec(`docker build -t ${IMAGE_NAME} ${projectRoot}`, { timeout: 300000, stdio: "pipe" });
+    execSync(`docker build -t ${IMAGE_NAME} ${projectRoot}`, { timeout: 300000, stdio: ["pipe", "pipe", "pipe"] });
     const buildTime = ((Date.now() - buildStart) / 1000).toFixed(1);
     check("Docker image builds successfully", true, `${buildTime}s`);
   } catch (err) {
