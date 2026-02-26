@@ -85,7 +85,10 @@ Plans:
   3. All 4 skill files (domain knowledge, monitoring protocols, analysis playbook, optimization playbook) are loaded and the agent references skill content when answering portfolio questions
   4. Daily health check cron job fires at its scheduled time and the agent executes the monitoring workflow
   5. Weekly optimization cron job fires at its scheduled time and the agent executes the optimization workflow
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 09-01-PLAN.md -- Agent skill files + OpenClaw config (4 skill markdown files, openclaw.json instructions reference)
+- [ ] 09-02-PLAN.md -- Dockerfile + deployment validation script (Docker build, env vars, skills in container, cron validation)
 
 ### Phase 10: Messaging Integration
 **Goal**: Users interact with the agent through Slack and Telegram -- receiving summaries, asking questions, and approving pricing recommendations
@@ -113,9 +116,9 @@ Plans:
 | 6. Server Boot + Safety Gate | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 7. Live API Validation | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 8. Snapshot Persistence | v1.1 | 1/1 | Complete | 2026-02-26 |
-| 9. OpenClaw Deployment | v1.1 | 0/? | Not started | - |
+| 9. OpenClaw Deployment | v1.1 | 0/2 | Planned | - |
 | 10. Messaging Integration | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-26 -- Phase 8 complete (1/1 plans, 5 requirements, 38/38 checks passed)*
+*Last updated: 2026-02-25 -- Phase 9 planned (2 plans, 5 requirements)*
