@@ -4,25 +4,25 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Phase 7 complete — ready for Phase 8 (Snapshot Persistence)
+**Current Focus:** Phase 8 complete — ready for Phase 9 (OpenClaw Deployment)
 
 ## Current Position
 
 **Milestone:** v1.1 Integration & Validation
-**Phase:** 7 of 10 (Live API Validation) — COMPLETE
-**Plan:** 2 of 2 (all plans complete)
-**Status:** Phase complete — ready for Phase 8
-**Last activity:** 2026-02-25 -- Phase 7 verified and complete
+**Phase:** 8 of 10 (Snapshot Persistence) — COMPLETE
+**Plan:** 1 of 1 (all plans complete)
+**Status:** Phase complete — ready for Phase 9
+**Last activity:** 2026-02-26 -- Phase 8 verified and complete (38/38 checks passed)
 
-Progress: [##############......] 70% (7/10 phases complete across all milestones)
+Progress: [################....] 80% (8/10 phases complete across all milestones)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
+- Total plans completed: 30
 - Plans failed: 0
-- Average duration: ~6.5 min/plan
-- Total execution time: ~2.7 hours
+- Average duration: ~6.7 min/plan
+- Total execution time: ~3.7 hours
 
 **By Phase (v1.0):**
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [06-01] Dual safety layer: env var gate + skill-level agent instruction
 - [06-02] Boot validation via stdio JSON-RPC — spawns MCP server as child process
 - [06-02] Test args must satisfy Zod schemas before reaching tool handler logic
+- [07-01] All PriceLabs API responses wrapped in objects — need explicit unwrapping
+- [08-01] Zod .nullish() required for all PriceLabs nullable fields — real API returns null not undefined
+- [08-01] Cancellation detection requires status CHANGE — SQL CASE only triggers on transition
 
 ### Accumulated TODOs
 
@@ -63,11 +66,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-25T22:44:33.483Z
-**Stopped At:** Phase 8 context gathered
-**Next Action:** Plan and execute Phase 8 (Snapshot Persistence)
-**Resume file:** .planning/phases/08-snapshot-persistence/08-CONTEXT.md
+**Last Session:** 2026-02-26T01:10:00Z
+**Stopped At:** Phase 8 complete — all 5 requirements validated (38/38 checks)
+**Next Action:** Plan and execute Phase 9 (OpenClaw Deployment)
+**Resume file:** .planning/phases/08-snapshot-persistence/08-01-SUMMARY.md
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-25 -- Phase 7 complete (2/2 plans, 6 requirements, all validated with real API)*
+*Last updated: 2026-02-26 -- Phase 8 complete (1/1 plans, 5 requirements, 38/38 checks passed with real API)*

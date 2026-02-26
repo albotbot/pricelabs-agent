@@ -28,7 +28,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 
 - [x] **Phase 6: Server Boot + Safety Gate** - MCP server builds, boots, creates database, registers all tools, and write tools are confirmed disabled (completed 2026-02-25)
 - [x] **Phase 7: Live API Validation** - Real PriceLabs API calls succeed through MCP tool handlers with correct data shapes (completed 2026-02-25)
-- [ ] **Phase 8: Snapshot Persistence** - Real portfolio data stored in SQLite and reads back correctly with pre-write safety verified
+- [x] **Phase 8: Snapshot Persistence** - Real portfolio data stored in SQLite and reads back correctly with pre-write safety verified (completed 2026-02-26)
 - [ ] **Phase 9: OpenClaw Deployment** - MCP server runs in Docker sandbox with skills loaded and cron jobs firing
 - [ ] **Phase 10: Messaging Integration** - Slack and Telegram deliver summaries, answer questions, and handle approval flow
 
@@ -71,9 +71,9 @@ Plans:
   2. `pricelabs_store_price_snapshots`, `pricelabs_store_reservations`, and `pricelabs_store_market_snapshot` each persist real data that can be queried back with correct values
   3. Reservation upsert correctly detects cancellation status changes (cancelled_on populated when a previously active reservation disappears)
   4. Calling the pre-write snapshot tool captures current state to audit_log with action_type='snapshot' and the full JSON payload is queryable
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 08-01-PLAN.md -- Persistence validation (store all data types into SQLite, verify read-back, cancellation detection, pre-write snapshot)
+- [x] 08-01-PLAN.md -- Persistence validation (store all data types into SQLite, verify read-back, cancellation detection, pre-write snapshot)
 
 ### Phase 9: OpenClaw Deployment
 **Goal**: The complete agent runs inside OpenClaw's Docker sandbox with skills loaded, environment configured, and cron jobs executing on schedule
@@ -112,10 +112,10 @@ Plans:
 | 5. Scale + Feedback Loop | v1.0 | 3/3 | Complete | 2026-02-25 |
 | 6. Server Boot + Safety Gate | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 7. Live API Validation | v1.1 | 2/2 | Complete | 2026-02-25 |
-| 8. Snapshot Persistence | v1.1 | 0/1 | Planned | - |
+| 8. Snapshot Persistence | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 9. OpenClaw Deployment | v1.1 | 0/? | Not started | - |
 | 10. Messaging Integration | v1.1 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-25 -- Phase 8 planned (1 plan, 5 requirements)*
+*Last updated: 2026-02-26 -- Phase 8 complete (1/1 plans, 5 requirements, 38/38 checks passed)*
