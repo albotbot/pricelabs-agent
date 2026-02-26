@@ -1,0 +1,56 @@
+{
+  "id": "pricelabs",
+  "name": "PriceLabs MCP Bridge",
+  "description": "Bridges all 28 PriceLabs MCP server tools into OpenClaw agent tools via stdio JSON-RPC.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "serverPath": {
+        "type": "string",
+        "description": "Absolute path to the MCP server entry point (dist/index.js)"
+      },
+      "apiKey": {
+        "type": "string",
+        "description": "PriceLabs API key"
+      },
+      "dbPath": {
+        "type": "string",
+        "description": "SQLite database path"
+      },
+      "baseUrl": {
+        "type": "string",
+        "description": "PriceLabs API base URL"
+      },
+      "writesEnabled": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ],
+        "description": "Enable write operations"
+      }
+    }
+  },
+  "uiHints": {
+    "serverPath": {
+      "label": "Server Path",
+      "placeholder": "/mnt/c/Projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js"
+    },
+    "apiKey": {
+      "label": "PriceLabs API Key",
+      "sensitive": true
+    },
+    "dbPath": {
+      "label": "Database Path",
+      "placeholder": "/home/NGA/.pricelabs-agent/data.sqlite"
+    },
+    "baseUrl": {
+      "label": "API Base URL",
+      "placeholder": "https://api.pricelabs.co"
+    },
+    "writesEnabled": {
+      "label": "Writes Enabled"
+    }
+  }
+}

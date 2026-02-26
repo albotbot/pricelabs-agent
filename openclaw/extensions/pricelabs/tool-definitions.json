@@ -1,0 +1,1532 @@
+[
+  {
+    "name": "pricelabs_get_listings",
+    "description": "Fetch all PriceLabs listings with health scores, occupancy, revenue, and sync status. Returns computed fields: occupancy_gap_pct, revenue_vs_stly_pct, days_since_sync.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "skip_hidden": {
+          "type": "boolean",
+          "description": "Filter out hidden listings (default: include all)"
+        },
+        "only_syncing": {
+          "type": "boolean",
+          "description": "Only return listings with active price sync enabled"
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_listing",
+    "description": "Fetch a single PriceLabs listing by ID with detailed health, occupancy, revenue data, and computed analysis fields.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The PriceLabs listing ID to fetch"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier for this listing (e.g., 'airbnb')"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_update_listings",
+    "description": "Update base/min/max prices or tags for one or more listings. REQUIRES reason parameter for audit trail. This is a DESTRUCTIVE operation -- changes take effect immediately.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "PriceLabs listing ID (required)"
+              },
+              "pms": {
+                "type": "string",
+                "description": "PMS identifier (required, e.g., 'airbnb')"
+              },
+              "min": {
+                "type": "number",
+                "description": "New minimum nightly price"
+              },
+              "base": {
+                "type": "number",
+                "description": "New base price anchor"
+              },
+              "max": {
+                "type": "number",
+                "description": "New maximum nightly price"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "description": "Listing tags (max 10 tags)"
+              }
+            },
+            "required": [
+              "id",
+              "pms"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "description": "Array of listing updates to apply"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Rationale for this change (min 10 chars, required for audit trail)"
+        }
+      },
+      "required": [
+        "listings",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_prices",
+    "description": "Fetch daily pricing data for a listing including dynamic prices, demand signals (colors/descriptions), booking status, and ADR comparisons. Returns computed fields: demand_level (human-readable), adr_vs_stly_pct.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The PriceLabs listing ID to fetch prices for"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "start_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Start date for the price range (YYYY-MM-DD)"
+        },
+        "end_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "End date for the price range (YYYY-MM-DD)"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code to return prices in (defaults to listing currency)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "start_date",
+        "end_date"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_overrides",
+    "description": "Fetch active date-specific overrides (DSOs) for a listing. Shows price adjustments, min-stay rules, and check-in/check-out restrictions per date.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to fetch overrides for"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "start_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Filter overrides starting from this date (YYYY-MM-DD)"
+        },
+        "end_date": {
+          "$ref": "#/properties/start_date",
+          "description": "Filter overrides up to this date (YYYY-MM-DD)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_set_overrides",
+    "description": "Create or update date-specific overrides (DSOs) for a listing. DSOs have the HIGHEST priority in PriceLabs and override ALL other settings including min price. REQUIRES reason for audit trail.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to set overrides for"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "The date for this override (YYYY-MM-DD)"
+              },
+              "price_type": {
+                "type": "string",
+                "enum": [
+                  "fixed",
+                  "percentage"
+                ],
+                "description": "Override price type: 'fixed' for absolute price, 'percentage' for percent adjustment (-75 to 500)"
+              },
+              "price_value": {
+                "type": "number",
+                "description": "Override price value: absolute price if 'fixed', percent adjustment if 'percentage'"
+              },
+              "currency": {
+                "type": "string",
+                "description": "Currency code (REQUIRED when price_type is 'fixed', must match PMS currency)"
+              },
+              "min_stay": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "description": "Minimum stay override (integer > 0)"
+              },
+              "check_in": {
+                "type": "string",
+                "pattern": "^[01]{7}$",
+                "description": "Check-in day restriction (7-char binary Mon-Sun)"
+              },
+              "check_out": {
+                "$ref": "#/properties/overrides/items/properties/check_in",
+                "description": "Check-out day restriction (7-char binary Mon-Sun)"
+              }
+            },
+            "required": [
+              "date",
+              "price_type",
+              "price_value"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "description": "Array of date-specific overrides to apply"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Rationale for this override change (min 10 chars, required for audit trail)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "overrides",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "readOnlyHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_delete_overrides",
+    "description": "Delete date-specific overrides for specified dates. Removes DSO pricing and restores dynamic pricing for those dates. REQUIRES reason for audit trail.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to delete overrides from"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Date in YYYY-MM-DD format"
+          },
+          "minItems": 1,
+          "description": "Array of dates to remove overrides for (YYYY-MM-DD format)"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Rationale for deleting these overrides (min 10 chars, required for audit trail)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "dates",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "readOnlyHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_neighborhood",
+    "description": "Fetch neighborhood market data showing ADR, occupancy, and revenue at 25th/50th/75th/90th percentiles. Use for competitive positioning and base price calibration.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to fetch neighborhood data for"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "start_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Start date for neighborhood data range (YYYY-MM-DD)"
+        },
+        "end_date": {
+          "$ref": "#/properties/start_date",
+          "description": "End date for neighborhood data range (YYYY-MM-DD)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_reservations",
+    "description": "Fetch reservation data for a listing including guest info, dates, revenue, source, and booking timestamps. Use for pace tracking and cancellation detection.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to fetch reservations for"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "start_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Start date for the reservation query range (YYYY-MM-DD, required by API)"
+        },
+        "end_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "End date for the reservation query range (YYYY-MM-DD, required by API)"
+        },
+        "limit": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "description": "Maximum number of reservations to return (default: 100, max: 1000)"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Offset for pagination (default: 0)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "start_date",
+        "end_date"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_push_prices",
+    "description": "Trigger a price sync/push for a listing. Forces PriceLabs to recalculate and push updated prices to connected OTAs. DESTRUCTIVE -- only use when prices need immediate refresh. REQUIRES reason.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to push prices for"
+        },
+        "pms_name": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Rationale for triggering a manual price push (min 10 chars, required for audit trail)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms_name",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "readOnlyHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_add_listing",
+    "description": "Add a new listing to PriceLabs for price management. ONLY works for BookingSync PMS. DESTRUCTIVE -- creates a new managed listing. REQUIRES reason.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to import from PMS"
+        },
+        "pms_name": {
+          "type": "string",
+          "const": "bookingsync",
+          "description": "Only BookingSync PMS is supported for adding listings via the API"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Rationale for adding this listing (min 10 chars, required for audit trail)"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms_name",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "readOnlyHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_rate_plans",
+    "description": "Fetch available rate plan configurations for a listing. Shows pricing tiers and adjustment rules.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "The listing ID to fetch rate plans for"
+        },
+        "pms_name": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb')"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms_name"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_api_status",
+    "description": "Check PriceLabs MCP server health: rate limit budget remaining, cache statistics, and system status. Use this for self-awareness before planning expensive operations.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_store_daily_snapshots",
+    "description": "Store today's listing snapshots in the database for historical tracking. Call this during daily health checks after fetching all listings via pricelabs_get_listings.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "listing_id": {
+                "type": "string",
+                "description": "PriceLabs listing ID"
+              },
+              "pms": {
+                "type": "string",
+                "description": "PMS name (e.g., 'bookingsync')"
+              },
+              "name": {
+                "type": "string",
+                "description": "Listing display name"
+              },
+              "health_7_day": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "7-day health score"
+              },
+              "health_30_day": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "30-day health score"
+              },
+              "health_60_day": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "60-day health score"
+              },
+              "occupancy_next_30": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "number",
+                      "string"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Listing occupancy next 30 days (0-100, may be '43 %' string from API)"
+              },
+              "market_occupancy_next_30": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "number",
+                      "string"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Market occupancy next 30 days (0-100, may be '43 %' string from API)"
+              },
+              "occupancy_gap_pct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Computed occupancy gap vs market (%)"
+              },
+              "revenue_past_7": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "number",
+                      "string"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Revenue in past 7 days (may be 'Fully Blocked' string from API)"
+              },
+              "stly_revenue_past_7": {
+                "anyOf": [
+                  {
+                    "type": [
+                      "number",
+                      "string"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "STLY revenue for past 7 days (may be string from API)"
+              },
+              "revenue_vs_stly_pct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Computed revenue vs STLY (%)"
+              },
+              "base_price": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Current base price"
+              },
+              "recommended_base_price": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "PriceLabs recommended base price"
+              },
+              "last_date_pushed": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO timestamp of last price sync push"
+              },
+              "days_since_sync": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Computed days since last sync"
+              },
+              "is_stale_sync": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "True if days_since_sync > 2"
+              },
+              "data_json": {
+                "type": "string",
+                "description": "Full listing JSON blob for future-proofing"
+              }
+            },
+            "required": [
+              "listing_id",
+              "pms",
+              "data_json"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of listing snapshots to store"
+        },
+        "snapshot_date": {
+          "type": "string",
+          "description": "Override snapshot date (YYYY-MM-DD). Defaults to today."
+        }
+      },
+      "required": [
+        "snapshots"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_store_price_snapshots",
+    "description": "Store price data with demand signals for a listing. Call this during daily health checks after fetching prices via pricelabs_get_prices.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "PriceLabs listing ID"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name"
+        },
+        "prices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "price_date": {
+                "type": "string",
+                "description": "Date this price is for (YYYY-MM-DD)"
+              },
+              "price": {
+                "type": "number",
+                "description": "Price for this date"
+              },
+              "demand_level": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Demand level (high, medium, low)"
+              },
+              "booking_status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Booking status for this date"
+              },
+              "booking_status_stly": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "STLY booking status"
+              },
+              "adr": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Average daily rate"
+              },
+              "adr_stly": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "STLY average daily rate"
+              }
+            },
+            "required": [
+              "price_date",
+              "price"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of price entries to store"
+        },
+        "snapshot_date": {
+          "type": "string",
+          "description": "Override snapshot date (YYYY-MM-DD). Defaults to today."
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "prices"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_store_reservations",
+    "description": "Upsert reservation data for a listing. Detects new cancellations by comparing booking_status changes. Call after fetching reservation data via pricelabs_get_reservations.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "PriceLabs listing ID"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name"
+        },
+        "reservations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "reservation_id": {
+                "type": "string",
+                "description": "Unique reservation identifier"
+              },
+              "check_in": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Check-in date (YYYY-MM-DD)"
+              },
+              "check_out": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Check-out date (YYYY-MM-DD)"
+              },
+              "booked_date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Date reservation was made"
+              },
+              "booking_status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "'booked' or 'cancelled'"
+              },
+              "rental_revenue": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Revenue from this reservation"
+              },
+              "total_cost": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Total cost of reservation"
+              },
+              "no_of_days": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Number of nights"
+              },
+              "currency": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Currency code"
+              },
+              "data_json": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Full reservation JSON blob"
+              }
+            },
+            "required": [
+              "reservation_id"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of reservations to upsert"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "reservations"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_snapshots",
+    "description": "Retrieve historical snapshots for trend analysis. Query listing, price, or market snapshot tables by date range. Use for comparing current performance to past periods.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "Filter by listing ID. Omit for all listings."
+        },
+        "pms": {
+          "type": "string",
+          "description": "Filter by PMS name. Required if listing_id is provided."
+        },
+        "table": {
+          "type": "string",
+          "enum": [
+            "listing_snapshots",
+            "price_snapshots",
+            "market_snapshots"
+          ],
+          "description": "Which snapshot table to query"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "Start date for range query (YYYY-MM-DD). Defaults to 30 days ago."
+        },
+        "end_date": {
+          "type": "string",
+          "description": "End date for range query (YYYY-MM-DD). Defaults to today."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum rows to return. Default 100."
+        }
+      },
+      "required": [
+        "table"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_store_market_snapshot",
+    "description": "Store neighborhood/market data snapshots. Call after fetching neighborhood data via pricelabs_get_neighborhood for each listing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "listing_id": {
+                "type": "string",
+                "description": "PriceLabs listing ID"
+              },
+              "pms": {
+                "type": "string",
+                "description": "PMS name"
+              },
+              "listings_used": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Number of comparable listings in neighborhood"
+              },
+              "p25_price": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "25th percentile price"
+              },
+              "p50_price": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "50th percentile (median) price"
+              },
+              "p75_price": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "75th percentile price"
+              },
+              "p90_price": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "90th percentile price"
+              },
+              "market_occupancy": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Market occupancy rate"
+              },
+              "data_json": {
+                "type": "string",
+                "description": "Full neighborhood JSON blob"
+              }
+            },
+            "required": [
+              "listing_id",
+              "pms",
+              "data_json"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of market snapshots to store"
+        },
+        "snapshot_date": {
+          "type": "string",
+          "description": "Override snapshot date (YYYY-MM-DD). Defaults to today."
+        }
+      },
+      "required": [
+        "snapshots"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_booking_pace",
+    "description": "Calculate booking pace at multiple cutoff windows (7/30/60/90 days) compared to same-time-last-year (STLY). Use for MON-03 (pace tracking) and MON-04 (pace alert detection).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "PriceLabs listing ID"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name"
+        },
+        "cutoff_days": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Pace cutoff windows in days. Default: [7, 30, 60, 90]"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_log_action",
+    "description": "Record an agent action in the audit log. Call this after every significant action: generating reports, sending alerts, making recommendations, receiving approvals, executing changes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "enum": [
+            "recommendation",
+            "approval",
+            "execution",
+            "alert",
+            "report",
+            "snapshot",
+            "rollback"
+          ],
+          "description": "Type of agent action"
+        },
+        "listing_id": {
+          "type": "string",
+          "description": "Listing ID if action is listing-specific. Omit for portfolio-level."
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name if listing-specific"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the action"
+        },
+        "details_json": {
+          "type": "string",
+          "description": "JSON string with action-specific details"
+        },
+        "channel": {
+          "type": "string",
+          "description": "Channel context: 'slack', 'telegram', 'cron', 'interactive'"
+        }
+      },
+      "required": [
+        "action_type",
+        "description"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_audit_log",
+    "description": "Retrieve audit trail entries. Filter by listing, action type, or date range. Use for accountability, debugging, and answering 'what changes have been made?' questions.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "Filter by listing ID"
+        },
+        "action_type": {
+          "type": "string",
+          "enum": [
+            "recommendation",
+            "approval",
+            "execution",
+            "alert",
+            "report",
+            "snapshot",
+            "rollback"
+          ],
+          "description": "Filter by action type"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "Start date for range query (ISO datetime). Defaults to 7 days ago."
+        },
+        "end_date": {
+          "type": "string",
+          "description": "End date for range query (ISO datetime). Defaults to now."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum entries to return. Default 50."
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_portfolio_kpis",
+    "description": "Compute portfolio KPIs (occupancy, revenue, health) with week-over-week and STLY comparisons for each listing. Returns per-listing data with current and previous period metrics. Use for weekly optimization reports (ANLY-03, ANLY-04) and competitive position analysis (ANLY-05).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "current_date": {
+          "type": "string",
+          "description": "Snapshot date for current period (YYYY-MM-DD). Defaults to latest."
+        },
+        "compare_to": {
+          "type": "string",
+          "enum": [
+            "previous_week",
+            "previous_month",
+            "stly"
+          ],
+          "description": "Comparison period. Default: previous_week."
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_detect_underperformers",
+    "description": "Detect underperforming listings based on configurable thresholds for occupancy gap vs market, revenue vs STLY, and health score decline. Returns flagged listings with underperformance type classification. Use for underperformance alerting (ANLY-01, ANLY-02).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "snapshot_date": {
+          "type": "string",
+          "description": "Snapshot date to analyze (YYYY-MM-DD). Defaults to latest."
+        },
+        "occupancy_gap_threshold": {
+          "type": "number",
+          "description": "Occupancy gap threshold (%). Default: 20."
+        },
+        "revenue_stly_threshold": {
+          "type": "number",
+          "description": "Revenue vs STLY threshold (%). Default: -25."
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_snapshot_before_write",
+    "description": "Capture current listing state (base/min/max prices, currency) and existing overrides before a write operation. MUST be called before every pricelabs_set_overrides, pricelabs_update_listings, or pricelabs_delete_overrides call. Returns a structured snapshot and stores it in the audit log for rollback capability.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "PriceLabs listing ID to snapshot"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb', 'bookingsync')"
+        },
+        "operation_type": {
+          "type": "string",
+          "enum": [
+            "set_overrides",
+            "update_listing",
+            "delete_overrides"
+          ],
+          "description": "Type of write operation about to be performed"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "Start date for override date range (YYYY-MM-DD). Required for set_overrides and delete_overrides."
+        },
+        "end_date": {
+          "type": "string",
+          "description": "End date for override date range (YYYY-MM-DD). Required for set_overrides and delete_overrides."
+        },
+        "channel": {
+          "type": "string",
+          "description": "Channel context: 'slack', 'telegram', 'cron', 'interactive'"
+        }
+      },
+      "required": [
+        "listing_id",
+        "pms",
+        "operation_type"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_record_change",
+    "description": "Record an executed pricing change for revenue impact tracking. Creates a change_tracking entry with 7-day, 14-day, and 30-day follow-up check dates. Call this after every successful pricelabs_set_overrides, pricelabs_update_listings, or pricelabs_delete_overrides execution.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audit_log_id": {
+          "type": "number",
+          "description": "FK to audit_log.id for the execution entry"
+        },
+        "listing_id": {
+          "type": "string",
+          "description": "PriceLabs listing ID"
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS identifier (e.g., 'airbnb', 'bookingsync')"
+        },
+        "change_type": {
+          "type": "string",
+          "enum": [
+            "set_overrides",
+            "update_listing",
+            "delete_overrides"
+          ],
+          "description": "Type of pricing change that was executed"
+        },
+        "affected_dates_start": {
+          "type": "string",
+          "description": "Start of affected date range for DSO changes (YYYY-MM-DD). Optional for non-DSO changes."
+        },
+        "affected_dates_end": {
+          "type": "string",
+          "description": "End of affected date range for DSO changes (YYYY-MM-DD). Optional for non-DSO changes."
+        },
+        "before_json": {
+          "type": "string",
+          "description": "JSON snapshot of values before the change"
+        },
+        "after_json": {
+          "type": "string",
+          "description": "JSON of what was changed to"
+        }
+      },
+      "required": [
+        "audit_log_id",
+        "listing_id",
+        "pms",
+        "change_type",
+        "before_json",
+        "after_json"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_change_impact",
+    "description": "Query pending and completed revenue impact assessments from change tracking. Supports filtering by listing and/or pending-only (overdue checks). Use for daily impact review (SCALE-02) and 7/14/30 day follow-up workflows.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "Filter by listing ID. Returns only changes for this listing."
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name (e.g., 'airbnb', 'bookingsync'). Required if listing_id is provided."
+        },
+        "pending_only": {
+          "type": "boolean",
+          "description": "If true, only return changes with pending (overdue) check intervals. Default false."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of entries to return. Default 20."
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_get_user_config",
+    "description": "Read alert threshold configuration. Returns per-listing values merged with global defaults, or global-only if no listing specified. Always includes system defaults so the agent knows effective values. Use to check current thresholds before detect_underperformers (SCALE-04).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "listing_id": {
+          "type": "string",
+          "description": "Get config for specific listing (merged with global defaults). Omit for global-only."
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name (e.g., 'airbnb', 'bookingsync'). Required if listing_id is provided."
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "pricelabs_set_user_config",
+    "description": "Set an alert threshold configuration value. Validates bounds per config key. Set for a specific listing (with pms) or globally (omit both listing_id and pms). Returns the saved config entry. Use to customize alert sensitivity (SCALE-04).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "config_key": {
+          "type": "string",
+          "enum": [
+            "occupancy_gap_threshold",
+            "revenue_drop_threshold",
+            "pace_lag_threshold",
+            "health_score_threshold",
+            "stale_sync_hours"
+          ],
+          "description": "Configuration key to set"
+        },
+        "config_value": {
+          "type": "number",
+          "description": "Numeric threshold value"
+        },
+        "listing_id": {
+          "type": "string",
+          "description": "Set for specific listing. Omit for global default. Both listing_id and pms must be provided together or both omitted."
+        },
+        "pms": {
+          "type": "string",
+          "description": "PMS name (e.g., 'airbnb', 'bookingsync'). Required if listing_id is provided."
+        }
+      },
+      "required": [
+        "config_key",
+        "config_value"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+]
