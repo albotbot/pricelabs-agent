@@ -29,7 +29,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 - [x] **Phase 6: Server Boot + Safety Gate** - MCP server builds, boots, creates database, registers all tools, and write tools are confirmed disabled (completed 2026-02-25)
 - [x] **Phase 7: Live API Validation** - Real PriceLabs API calls succeed through MCP tool handlers with correct data shapes (completed 2026-02-25)
 - [x] **Phase 8: Snapshot Persistence** - Real portfolio data stored in SQLite and reads back correctly with pre-write safety verified (completed 2026-02-26)
-- [ ] **Phase 9: OpenClaw Deployment** - MCP server runs in Docker sandbox with skills loaded and cron jobs firing
+- [x] **Phase 9: OpenClaw Deployment** - MCP server runs in Docker sandbox with skills loaded and cron jobs firing (completed 2026-02-26)
 - [ ] **Phase 10: Messaging Integration** - Slack and Telegram deliver summaries, answer questions, and handle approval flow
 
 ## Phase Details
@@ -85,7 +85,7 @@ Plans:
   3. All 4 skill files (domain knowledge, monitoring protocols, analysis playbook, optimization playbook) are loaded and the agent references skill content when answering portfolio questions
   4. Daily health check cron job fires at its scheduled time and the agent executes the monitoring workflow
   5. Weekly optimization cron job fires at its scheduled time and the agent executes the optimization workflow
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 09-01-PLAN.md -- Agent skill files + OpenClaw config (4 skill markdown files, openclaw.json instructions reference)
 - [ ] 09-02-PLAN.md -- Dockerfile + deployment validation script (Docker build, env vars, skills in container, cron validation)
@@ -116,7 +116,7 @@ Plans:
 | 6. Server Boot + Safety Gate | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 7. Live API Validation | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 8. Snapshot Persistence | v1.1 | 1/1 | Complete | 2026-02-26 |
-| 9. OpenClaw Deployment | v1.1 | 0/2 | Planned | - |
+| 9. OpenClaw Deployment | v1.1 | Complete    | 2026-02-26 | - |
 | 10. Messaging Integration | v1.1 | 0/? | Not started | - |
 
 ---
