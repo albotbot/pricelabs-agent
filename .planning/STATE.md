@@ -4,15 +4,15 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Phase 8 complete — ready for Phase 9 (OpenClaw Deployment)
+**Current Focus:** Phase 9 in progress -- OpenClaw Deployment (agent skills and Docker validation)
 
 ## Current Position
 
 **Milestone:** v1.1 Integration & Validation
-**Phase:** 8 of 10 (Snapshot Persistence) — COMPLETE
-**Plan:** 1 of 1 (all plans complete)
-**Status:** Phase complete — ready for Phase 9
-**Last activity:** 2026-02-26 -- Phase 8 verified and complete (38/38 checks passed)
+**Phase:** 9 of 10 (OpenClaw Deployment) — IN PROGRESS
+**Plan:** 1 of 2 complete
+**Status:** Plan 09-01 complete (agent skill files + openclaw.json instructions) -- ready for Plan 09-02
+**Last activity:** 2026-02-26 -- 4 agent skill files created, openclaw.json updated with instructions
 
 Progress: [################....] 80% (8/10 phases complete across all milestones)
 
@@ -52,6 +52,8 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [07-01] All PriceLabs API responses wrapped in objects — need explicit unwrapping
 - [08-01] Zod .nullish() required for all PriceLabs nullable fields — real API returns null not undefined
 - [08-01] Cancellation detection requires status CHANGE — SQL CASE only triggers on transition
+- [09-01] Used 'instructions' field in openclaw.json for agent system prompt loading
+- [09-01] Protocol section titles match cron job message references exactly for agent discoverability
 
 ### Accumulated TODOs
 
@@ -66,11 +68,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-26T01:22:18.648Z
-**Stopped At:** Phase 9 context gathered
-**Next Action:** Plan and execute Phase 9 (OpenClaw Deployment)
-**Resume file:** .planning/phases/09-openclaw-deployment/09-CONTEXT.md
+**Last Session:** 2026-02-26T01:55:06Z
+**Stopped At:** Completed 09-01-PLAN.md (agent skill files + openclaw.json instructions)
+**Next Action:** Execute Plan 09-02 (Docker deployment validation)
+**Resume file:** .planning/phases/09-openclaw-deployment/09-01-SUMMARY.md
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-26 -- Phase 8 complete (1/1 plans, 5 requirements, 38/38 checks passed with real API)*
+*Last updated: 2026-02-26 -- Phase 9 Plan 1 complete (agent skill files created, openclaw.json updated)*

@@ -33,7 +33,7 @@ Requirements for Integration & Validation milestone. Proves v1.0 works end-to-en
 
 - [ ] **DEPLOY-01**: MCP server runs inside OpenClaw Docker sandbox
 - [ ] **DEPLOY-02**: Environment variables (API key, DB path) properly configured in OpenClaw
-- [ ] **DEPLOY-03**: All 4 skills load and agent references them during conversations
+- [x] **DEPLOY-03**: All 4 skills load and agent references them during conversations
 - [ ] **DEPLOY-04**: Daily health check cron jobs fire on schedule
 - [ ] **DEPLOY-05**: Weekly optimization cron jobs fire on schedule
 
@@ -101,7 +101,7 @@ Deferred to future release. Not in current roadmap.
 | SAFE-03 | Phase 10 | Pending |
 | DEPLOY-01 | Phase 9 | Pending |
 | DEPLOY-02 | Phase 9 | Pending |
-| DEPLOY-03 | Phase 9 | Pending |
+| DEPLOY-03 | Phase 9 | Complete |
 | DEPLOY-04 | Phase 9 | Pending |
 | DEPLOY-05 | Phase 9 | Pending |
 | MSG-01 | Phase 10 | Pending |
