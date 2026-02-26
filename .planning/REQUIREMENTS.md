@@ -39,17 +39,17 @@ Requirements for Integration & Validation milestone. Proves v1.0 works end-to-en
 
 ### Messaging (MSG)
 
-- [ ] **MSG-01**: Agent sends formatted health summaries to Slack channel
+- [x] **MSG-01**: Agent sends formatted health summaries to Slack channel
 - [ ] **MSG-02**: User can ask portfolio questions in Slack and receive live data answers
 - [ ] **MSG-03**: User can approve/reject pricing recommendations via Slack replies
-- [ ] **MSG-04**: Agent sends formatted health summaries to Telegram
+- [x] **MSG-04**: Agent sends formatted health summaries to Telegram
 - [ ] **MSG-05**: User can ask portfolio questions in Telegram and receive live data answers
 
 ### Safety (SAFE)
 
 - [ ] **SAFE-01**: Write tools (set_overrides, update_listings, delete_overrides) are disabled by default -- no pricing changes possible until user explicitly enables them
 - [ ] **SAFE-02**: Pre-write snapshot is captured before any write operation (verified ready for when writes are enabled)
-- [ ] **SAFE-03**: Bug fixes discovered during validation are committed and tested
+- [x] **SAFE-03**: Bug fixes discovered during validation are committed and tested
 
 ## v2.0 Requirements
 
@@ -98,16 +98,16 @@ Deferred to future release. Not in current roadmap.
 | STORE-04 | Phase 8 | Pending |
 | SAFE-01 | Phase 6 | Pending |
 | SAFE-02 | Phase 8 | Pending |
-| SAFE-03 | Phase 10 | Pending |
+| SAFE-03 | Phase 10 | Complete |
 | DEPLOY-01 | Phase 9 | Pending |
 | DEPLOY-02 | Phase 9 | Pending |
 | DEPLOY-03 | Phase 9 | Complete |
 | DEPLOY-04 | Phase 9 | Pending |
 | DEPLOY-05 | Phase 9 | Pending |
-| MSG-01 | Phase 10 | Pending |
+| MSG-01 | Phase 10 | Complete |
 | MSG-02 | Phase 10 | Pending |
 | MSG-03 | Phase 10 | Pending |
-| MSG-04 | Phase 10 | Pending |
+| MSG-04 | Phase 10 | Complete |
 | MSG-05 | Phase 10 | Pending |
 
 **Coverage:**
@@ -117,4 +117,4 @@ Deferred to future release. Not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 -- phase traceability added for v1.1 roadmap*
+*Last updated: 2026-02-26 -- MSG-01, MSG-04, SAFE-03 marked complete (Plan 10-01)*
