@@ -487,12 +487,15 @@ try {
     }
 
     // Step 4: Cancellation simulation (second pass)
-    // Take the first reservation and change its status to 'cancelled'
+    // Find a non-cancelled reservation to simulate cancellation (status must CHANGE to trigger cancelled_on)
+    const nonCancelledRes = reservationsToStore.find(r => r.booking_status && r.booking_status !== "cancelled")
+      || reservationsToStore.find(r => !r.booking_status)  // fallback: no status = not cancelled
+      || reservationsToStore[0];  // last resort
     const cancelledReservation = {
-      ...reservationsToStore[0],
+      ...nonCancelledRes,
       booking_status: "cancelled",
     };
-    info("Simulating cancellation", `reservation_id=${cancelledReservation.reservation_id}`);
+    info("Simulating cancellation", `reservation_id=${cancelledReservation.reservation_id}, was_status=${nonCancelledRes.booking_status || "null"}`);
 
     const storeRes2 = await callTool(serverProcess, "pricelabs_store_reservations", {
       listing_id: discoveredListingId,
