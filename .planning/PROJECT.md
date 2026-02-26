@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An AI-powered revenue management agent that runs on OpenClaw, connecting to PriceLabs' API to monitor short-term rental portfolios, provide interactive analytics via Slack and Telegram, and optimize pricing with human-in-the-loop approval. It acts as a 24/7 revenue manager — detecting underperformance, recommending pricing changes, executing approved changes, and tracking their impact over time.
+An AI-powered revenue management agent that runs on OpenClaw, connecting to PriceLabs' API to monitor short-term rental portfolios, provide interactive analytics via Slack and Telegram, and optimize pricing with human-in-the-loop approval. It acts as a 24/7 revenue manager — detecting underperformance, recommending pricing changes, executing approved changes, and tracking their impact over time. Fully validated end-to-end with real API data, live messaging delivery, and automated safety gates.
 
 ## Core Value
 
@@ -27,16 +27,17 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 - ✓ Agent tracks revenue impact of changes at 7/14/30 day intervals — v1.0
 - ✓ Agent detects cancellations and suggests reactive fill strategies — v1.0
 - ✓ User can configure alert thresholds per listing or globally — v1.0
+- ✓ MCP server boots, connects to SQLite, runs migrations, and serves 28 tools end-to-end — v1.1
+- ✓ Live PriceLabs API calls succeed through all read-path MCP tool handlers with real portfolio data — v1.1
+- ✓ Snapshot storage persists real listing, price, market, and reservation data correctly with cancellation detection — v1.1
+- ✓ OpenClaw deployment runs MCP server in Docker sandbox with skills loaded and cron jobs validated — v1.1
+- ✓ Slack and Telegram deliver health summaries, answer questions, and handle approval flow with live data — v1.1
+- ✓ Write safety gate (PRICELABS_WRITES_ENABLED=false) blocks all pricing changes by default — v1.1
+- ✓ OpenClaw plugin bridge registers all 28 MCP tools in the agent's tool namespace — v1.1
 
 ### Active
 
-**Current Milestone: v1.1 Integration & Validation**
-
-- [ ] MCP server boots, connects to SQLite, runs migrations, and serves tools end-to-end
-- [ ] Live PriceLabs API calls succeed through MCP tool handlers with real portfolio data
-- [ ] Snapshot storage persists real listing, price, market, and reservation data correctly
-- [ ] OpenClaw deployment runs MCP server in Docker sandbox with cron job execution
-- [ ] Slack delivery routes daily health summaries and alerts to user's workspace
+**No active milestone — planning next**
 
 **Deferred to v2.0:**
 
@@ -57,24 +58,33 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 ## Context
 
-### Current State (v1.0 shipped 2026-02-25)
+### Current State (v1.1 shipped 2026-02-26)
 
-**Tech Stack:** TypeScript MCP server (28 tools), SQLite persistence (7 tables), OpenClaw skills (4), cron jobs (4)
+**Tech Stack:** TypeScript MCP server (28 tools), SQLite persistence (7 tables), OpenClaw skills (4), OpenClaw plugin bridge, cron jobs (4), validation scripts (5)
 
-**Code:** ~6,400 TypeScript LOC across 43 source files + 1,343 lines of skill protocols
+**Code:** ~6,400 TypeScript LOC (MCP server) + 2,565 lines OpenClaw config/plugin + 3,327 lines validation scripts + 1,343 lines skill protocols
 
 **Architecture:**
 - MCP server (`mcp-servers/pricelabs/`) — API client, rate limiter, cache, 28 tools across 14 registration functions
-- Skills (`skills/`) — domain knowledge, monitoring protocols, analysis playbook, optimization playbook (9 sections)
+- OpenClaw plugin (`openclaw/extensions/pricelabs/`) — bridges all 28 MCP tools into OpenClaw via stdio JSON-RPC
+- Skills (`openclaw/skills/`) — domain knowledge, monitoring protocols, analysis playbook, optimization playbook (9 sections)
 - OpenClaw config (`openclaw/`) — gateway security, cron jobs (2 daily health, 2 weekly optimization), env config
 - SQLite — listing_snapshots, price_snapshots, reservations, market_snapshots, audit_log, change_tracking, user_config
+- Validation (`scripts/`) — boot, API, persistence, deployment, messaging validation scripts
+
+**Deployment:**
+- OpenClaw gateway running with PriceLabs plugin loaded (28 tools registered)
+- Slack + Telegram channels connected and delivering
+- Cron jobs registered and firing (health summaries delivered to both channels)
+- Write safety gate active (PRICELABS_WRITES_ENABLED=false)
 
 **Known issues / tech debt:**
-- OpenClaw Docker sandbox with stdio MCP server spawning not yet validated
 - OpenClaw cron skip bug #17852 may affect scheduled job reliability
 - Reply-based approval UX (v1) — could be improved with interactive buttons in future
 - PriceLabs reservation_data pagination limits not tested with real large datasets
 - Global-only thresholds in detect_underperformers batch query (per-listing thresholds via config tool only)
+- Permanent cron jobs (daily health, weekly optimization) not yet registered in OpenClaw — only tested with one-shot jobs
+- Telegram cron delivery requires explicit --to <chatId> (unlike Slack which auto-resolves)
 
 ### PriceLabs API (Customer API)
 - Base URL: `https://api.pricelabs.co`
@@ -85,10 +95,12 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 - Full API documentation in `research/02-api-reference.md`
 
 ### OpenClaw Runtime
-- Skills: markdown files (`SKILL.md`) with YAML front matter
-- MCP: natively supported — configure servers in `openclaw.json`
-- Model: Claude Opus 4.6
-- Messaging: Slack (Bolt) and Telegram (grammY) channels
+- Skills: markdown files loaded via `instructions` field in `openclaw.json`
+- MCP: via plugin bridge (`openclaw/extensions/pricelabs/`) — NOT native mcp.servers config
+- Model: openai-codex/gpt-5.3-codex (OpenClaw default; works with PriceLabs tools)
+- Messaging: Slack (socket mode) and Telegram (bot token) channels
+- Sandbox: `agents.defaults.sandbox.mode: "all"` with explicit `tools.sandbox.tools.allow` for pricelabs_*
+- Cron: Gateway-managed jobs in `~/.openclaw/cron/jobs.json`, CLI via `openclaw cron add`
 
 ### Research Completed
 - Platform overview, all 5 products, pricing tiers (`research/01-platform-overview.md`)
@@ -101,12 +113,13 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 ## Constraints
 
-- **Runtime**: OpenClaw — all agent logic must work as OpenClaw skills/MCP tools
+- **Runtime**: OpenClaw — all agent logic must work as OpenClaw skills/plugin tools
 - **API Rate**: 1000 requests/hour — agent must budget requests across workflows
 - **Approval**: All pricing changes require explicit user approval via messaging
-- **Model**: Claude Opus 4.6 via OpenClaw agent runtime
+- **Model**: openai-codex/gpt-5.3-codex via OpenClaw agent runtime (model-agnostic tool design)
 - **Channels**: Slack and Telegram as primary interfaces
 - **Data**: PriceLabs Customer API only (not Integration API)
+- **Safety**: PRICELABS_WRITES_ENABLED must be explicitly set to "true" to enable any pricing changes
 
 ## Key Decisions
 
@@ -122,6 +135,10 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 | Reply-based approval over interactive buttons | Cross-channel compatible (Slack + Telegram); simpler v1 | ⚠️ Revisit — may want buttons for v2 UX |
 | Agent-driven change tracking | Agent calls pricelabs_record_change explicitly; matches audit pattern | ✓ Good — flexible, not auto-tracking |
 | 5-phase read-before-write progression | Agent proves analytical value before trusted with pricing changes | ✓ Good — trust established progressively |
+| PRICELABS_WRITES_ENABLED env var gate | Strict string equality ("true") with per-call check, not startup-time | ✓ Good — runtime toggling, dual safety layer |
+| OpenClaw plugin bridge over native MCP | OpenClaw doesn't have native mcp.servers config; plugin system required | ✓ Good — all 28 tools registered via stdio JSON-RPC |
+| Sandbox tool allow glob (pricelabs_*) | OpenClaw sandbox.mode="all" hardcodes 13 core tools only | ✓ Good — explicit glob pattern in config |
+| One-shot cron for delivery testing | Verifiable, auto-deleting test jobs vs permanent cron | ✓ Good — clean testing pattern |
 
 ---
-*Last updated: 2026-02-25 after v1.1 milestone start*
+*Last updated: 2026-02-26 after v1.1 milestone complete*
