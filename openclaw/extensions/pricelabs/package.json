@@ -1,5 +1,5 @@
 {
-  "name": "pricelabs-mcp-bridge",
+  "name": "pricelabs",
   "version": "1.0.0",
   "description": "OpenClaw plugin that bridges PriceLabs MCP server tools",
   "type": "module",
