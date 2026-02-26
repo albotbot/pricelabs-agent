@@ -66,10 +66,17 @@ export function registerOptimizationTools(
           listingCacheKey,
           () =>
             apiClient
-              .get<Listing>(
+              .get<{ listings: Listing[] }>(
                 `/v1/listings/${params.listing_id}?pms=${encodeURIComponent(params.pms)}`,
               )
-              .then((r) => r.data),
+              .then((r) => {
+                // API returns { listings: [listing] } wrapper even for single listing
+                const listings = r.data.listings;
+                if (!listings || listings.length === 0) {
+                  throw new Error(`Listing ${params.listing_id} not found`);
+                }
+                return listings[0];
+              }),
           cache,
           rateLimiter,
           SNAPSHOT_CACHE_TTL_MS,
@@ -84,10 +91,10 @@ export function registerOptimizationTools(
             overridesCacheKey,
             () =>
               apiClient
-                .get<OverrideEntry[]>(
+                .get<{ overrides: OverrideEntry[] }>(
                   `/v1/listings/${params.listing_id}/overrides?pms=${encodeURIComponent(params.pms)}&start_date=${params.start_date}&end_date=${params.end_date}`,
                 )
-                .then((r) => r.data),
+                .then((r) => r.data.overrides),
             cache,
             rateLimiter,
             SNAPSHOT_CACHE_TTL_MS,

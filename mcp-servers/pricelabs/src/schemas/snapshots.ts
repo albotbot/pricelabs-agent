@@ -12,59 +12,59 @@ export const StoreDailySnapshotsInputSchema = z.object({
         name: z.string().optional().describe("Listing display name"),
         health_7_day: z
           .string()
-          .optional()
+          .nullish()
           .describe("7-day health score"),
         health_30_day: z
           .string()
-          .optional()
+          .nullish()
           .describe("30-day health score"),
         health_60_day: z
           .string()
-          .optional()
+          .nullish()
           .describe("60-day health score"),
         occupancy_next_30: z
           .union([z.number(), z.string()])
-          .optional()
+          .nullish()
           .describe("Listing occupancy next 30 days (0-100, may be '43 %' string from API)"),
         market_occupancy_next_30: z
           .union([z.number(), z.string()])
-          .optional()
+          .nullish()
           .describe("Market occupancy next 30 days (0-100, may be '43 %' string from API)"),
         occupancy_gap_pct: z
           .number()
-          .optional()
+          .nullish()
           .describe("Computed occupancy gap vs market (%)"),
         revenue_past_7: z
           .union([z.number(), z.string()])
-          .optional()
+          .nullish()
           .describe("Revenue in past 7 days (may be 'Fully Blocked' string from API)"),
         stly_revenue_past_7: z
           .union([z.number(), z.string()])
-          .optional()
+          .nullish()
           .describe("STLY revenue for past 7 days (may be string from API)"),
         revenue_vs_stly_pct: z
           .number()
-          .optional()
+          .nullish()
           .describe("Computed revenue vs STLY (%)"),
         base_price: z
           .number()
-          .optional()
+          .nullish()
           .describe("Current base price"),
         recommended_base_price: z
           .number()
-          .optional()
+          .nullish()
           .describe("PriceLabs recommended base price"),
         last_date_pushed: z
           .string()
-          .optional()
+          .nullish()
           .describe("ISO timestamp of last price sync push"),
         days_since_sync: z
           .number()
-          .optional()
+          .nullish()
           .describe("Computed days since last sync"),
         is_stale_sync: z
           .boolean()
-          .optional()
+          .nullish()
           .describe("True if days_since_sync > 2"),
         data_json: z
           .string()
@@ -93,20 +93,20 @@ export const StorePriceSnapshotsInputSchema = z.object({
         price: z.number().describe("Price for this date"),
         demand_level: z
           .string()
-          .optional()
+          .nullish()
           .describe("Demand level (high, medium, low)"),
         booking_status: z
           .string()
-          .optional()
+          .nullish()
           .describe("Booking status for this date"),
         booking_status_stly: z
           .string()
-          .optional()
+          .nullish()
           .describe("STLY booking status"),
-        adr: z.number().optional().describe("Average daily rate"),
+        adr: z.number().nullish().describe("Average daily rate"),
         adr_stly: z
           .number()
-          .optional()
+          .nullish()
           .describe("STLY average daily rate"),
       }),
     )
@@ -131,36 +131,36 @@ export const StoreReservationsInputSchema = z.object({
           .describe("Unique reservation identifier"),
         check_in: z
           .string()
-          .optional()
+          .nullish()
           .describe("Check-in date (YYYY-MM-DD)"),
         check_out: z
           .string()
-          .optional()
+          .nullish()
           .describe("Check-out date (YYYY-MM-DD)"),
         booked_date: z
           .string()
-          .optional()
+          .nullish()
           .describe("Date reservation was made"),
         booking_status: z
           .string()
-          .optional()
+          .nullish()
           .describe("'booked' or 'cancelled'"),
         rental_revenue: z
           .number()
-          .optional()
+          .nullish()
           .describe("Revenue from this reservation"),
         total_cost: z
           .number()
-          .optional()
+          .nullish()
           .describe("Total cost of reservation"),
         no_of_days: z
           .number()
-          .optional()
+          .nullish()
           .describe("Number of nights"),
-        currency: z.string().optional().describe("Currency code"),
+        currency: z.string().nullish().describe("Currency code"),
         data_json: z
           .string()
-          .optional()
+          .nullish()
           .describe("Full reservation JSON blob"),
       }),
     )
@@ -209,29 +209,29 @@ export const StoreMarketSnapshotInputSchema = z.object({
         pms: z.string().describe("PMS name"),
         listings_used: z
           .number()
-          .optional()
+          .nullish()
           .describe(
             "Number of comparable listings in neighborhood",
           ),
         p25_price: z
           .number()
-          .optional()
+          .nullish()
           .describe("25th percentile price"),
         p50_price: z
           .number()
-          .optional()
+          .nullish()
           .describe("50th percentile (median) price"),
         p75_price: z
           .number()
-          .optional()
+          .nullish()
           .describe("75th percentile price"),
         p90_price: z
           .number()
-          .optional()
+          .nullish()
           .describe("90th percentile price"),
         market_occupancy: z
           .number()
-          .optional()
+          .nullish()
           .describe("Market occupancy rate"),
         data_json: z
           .string()
