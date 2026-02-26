@@ -50,6 +50,12 @@
         "id": "pricelabs",
         "name": "PriceLabs Revenue Agent",
         "model": "anthropic/claude-opus-4-6",
+        "instructions": [
+          "openclaw/skills/domain-knowledge.md",
+          "openclaw/skills/monitoring-protocols.md",
+          "openclaw/skills/analysis-playbook.md",
+          "openclaw/skills/optimization-playbook.md"
+        ],
         "mcp": {
           "servers": [
             {
