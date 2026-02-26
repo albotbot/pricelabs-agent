@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** -- Phases 1-5, 43 requirements (shipped 2026-02-25)
-- 🚧 **v1.1 Integration & Validation** -- Phases 6-10, 26 requirements (in progress)
+- ✅ **v1.1 Integration & Validation** -- Phases 6-10, 26 requirements (shipped 2026-02-26)
 
 ## Phases
 
@@ -30,7 +30,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full phase details.
 - [x] **Phase 7: Live API Validation** - Real PriceLabs API calls succeed through MCP tool handlers with correct data shapes (completed 2026-02-25)
 - [x] **Phase 8: Snapshot Persistence** - Real portfolio data stored in SQLite and reads back correctly with pre-write safety verified (completed 2026-02-26)
 - [x] **Phase 9: OpenClaw Deployment** - MCP server runs in Docker sandbox with skills loaded and cron jobs firing (completed 2026-02-26)
-- [ ] **Phase 10: Messaging Integration** - Slack and Telegram deliver summaries, answer questions, and handle approval flow
+- [x] **Phase 10: Messaging Integration** - Slack and Telegram deliver summaries, answer questions, and handle approval flow (completed 2026-02-26)
 
 ## Phase Details
 
@@ -87,8 +87,8 @@ Plans:
   5. Weekly optimization cron job fires at its scheduled time and the agent executes the optimization workflow
 **Plans:** 2/2 plans complete
 Plans:
-- [ ] 09-01-PLAN.md -- Agent skill files + OpenClaw config (4 skill markdown files, openclaw.json instructions reference)
-- [ ] 09-02-PLAN.md -- Dockerfile + deployment validation script (Docker build, env vars, skills in container, cron validation)
+- [x] 09-01-PLAN.md -- Agent skill files + OpenClaw config (4 skill markdown files, openclaw.json instructions reference)
+- [x] 09-02-PLAN.md -- Dockerfile + deployment validation script (Docker build, env vars, skills in container, cron validation)
 
 ### Phase 10: Messaging Integration
 **Goal**: Users interact with the agent through Slack and Telegram -- receiving summaries, asking questions, and approving pricing recommendations
@@ -100,10 +100,10 @@ Plans:
   3. User can approve or reject a pricing recommendation via Slack reply and the agent acknowledges the decision
   4. Daily health summary appears in Telegram with the same content as Slack
   5. User asks a portfolio question in Telegram and receives a live data answer
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 10-01-PLAN.md -- Automated messaging validation (config, cron, protocol matching, env var inventory)
-- [ ] 10-02-PLAN.md -- Manual interaction testing (3 Q&A tests per channel, approval flow dry-run)
+- [x] 10-02-PLAN.md -- Manual interaction testing (11/11 live tests, Q&A + approval + health summary delivery)
 
 ## Progress
 
@@ -119,9 +119,9 @@ Plans:
 | 6. Server Boot + Safety Gate | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 7. Live API Validation | v1.1 | 2/2 | Complete | 2026-02-25 |
 | 8. Snapshot Persistence | v1.1 | 1/1 | Complete | 2026-02-26 |
-| 9. OpenClaw Deployment | v1.1 | Complete    | 2026-02-26 | - |
-| 10. Messaging Integration | v1.1 | 1/2 | In Progress | - |
+| 9. OpenClaw Deployment | v1.1 | 2/2 | Complete | 2026-02-26 |
+| 10. Messaging Integration | v1.1 | 2/2 | Complete | 2026-02-26 |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-26 -- Plan 10-01 complete (67/67 messaging config checks passed)*
+*Last updated: 2026-02-26 -- v1.1 COMPLETE (all 10 phases shipped, 33 plans, 69 requirements)*
