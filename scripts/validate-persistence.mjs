@@ -513,7 +513,7 @@ try {
       check("Cancellation detected", newCancellations.length >= 1, `new_cancellations=${newCancellations.length}`);
 
       if (newCancellations.length > 0) {
-        const cancelled = newCancellations[0];
+        const cancelled = newCancellations.find(c => c.reservation_id === cancelledReservation.reservation_id) || newCancellations[newCancellations.length - 1];
         check("Cancelled reservation has correct id", cancelled.reservation_id === cancelledReservation.reservation_id, `id=${cancelled.reservation_id}`);
         check("Cancelled reservation has cancelled_on timestamp", cancelled.cancelled_on != null && cancelled.cancelled_on.length > 0, `cancelled_on=${cancelled.cancelled_on}`);
 
