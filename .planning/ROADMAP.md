@@ -61,7 +61,11 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
   3. Combined bootstrap files (AGENTS.md + SOUL.md + USER.md + IDENTITY.md + TOOLS.md) total under ~2,000 tokens as measured by model tokenizer or 4-chars-per-token estimate
   4. SOUL.md persona reads as a professional revenue analyst distinct from the main agent (Albot) personality
   5. MEMORY.md is seeded with portfolio overview (5 listings, TN/NH markets) ready to grow with operational history
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 11-01-PLAN.md -- Author bootstrap workspace files (AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, HEARTBEAT.md) and validate token budget
+- [ ] 11-02-PLAN.md -- Create BOOT.md and MEMORY.md, migrate 4 skill files to SKILL.md format
 
 ### Phase 12: Agent Registration
 **Goal**: Agent is registered in OpenClaw, can authenticate for LLM calls, sees all 28 PriceLabs tools, and responds with correct persona
@@ -127,7 +131,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
 | 8. Snapshot Persistence | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 9. OpenClaw Deployment | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 10. Messaging Integration | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 11. Workspace Brain | v1.2 | 0/? | Not started | - |
+| 11. Workspace Brain | v1.2 | 0/2 | Planned | - |
 | 12. Agent Registration | v1.2 | 0/? | Not started | - |
 | 13. Channel Routing | v1.2 | 0/? | Not started | - |
 | 14. Permanent Cron Jobs | v1.2 | 0/? | Not started | - |
