@@ -9,15 +9,15 @@ Requirements for Agent Identity & Production Setup. Each maps to roadmap phases 
 
 ### Workspace Brain
 
-- [ ] **WORK-01**: Agent has AGENTS.md with operating instructions, safety rules, and tool usage protocol (under 4,000 chars)
-- [ ] **WORK-02**: Agent has SOUL.md with professional revenue analyst persona distinct from main agent personality (under 2,500 chars)
-- [ ] **WORK-03**: Agent has USER.md with owner profile, timezone (CST/EST), and STR business context (under 700 chars)
-- [ ] **WORK-04**: Agent has IDENTITY.md with unique name, emoji, and description distinct from main agent (under 400 chars)
-- [ ] **WORK-05**: Agent has TOOLS.md with quick reference for 28 MCP tools, rate limits, safety gate status, and skill pointers (under 1,500 chars)
+- [x] **WORK-01**: Agent has AGENTS.md with operating instructions, safety rules, and tool usage protocol (under 4,000 chars)
+- [x] **WORK-02**: Agent has SOUL.md with professional revenue analyst persona distinct from main agent personality (under 2,500 chars)
+- [x] **WORK-03**: Agent has USER.md with owner profile, timezone (CST/EST), and STR business context (under 700 chars)
+- [x] **WORK-04**: Agent has IDENTITY.md with unique name, emoji, and description distinct from main agent (under 400 chars)
+- [x] **WORK-05**: Agent has TOOLS.md with quick reference for 28 MCP tools, rate limits, safety gate status, and skill pointers (under 1,500 chars)
 - [ ] **WORK-06**: Agent has BOOT.md with startup health check and online notification procedure (under 500 chars)
 - [ ] **WORK-07**: Agent has MEMORY.md seeded with portfolio overview (5 listings, TN/NH markets) that grows with operational history
 - [ ] **WORK-08**: All 4 existing skill files migrated to workspace-scoped `skills/<name>/SKILL.md` format with YAML frontmatter
-- [ ] **WORK-09**: Combined bootstrap file token overhead (AGENTS.md + SOUL.md + USER.md + IDENTITY.md + TOOLS.md) stays under ~2,000 tokens
+- [x] **WORK-09**: Combined bootstrap file token overhead (AGENTS.md + SOUL.md + USER.md + IDENTITY.md + TOOLS.md) stays under ~2,000 tokens
 
 ### Agent Registration
 
@@ -91,15 +91,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WORK-01 | Phase 11 | Pending |
-| WORK-02 | Phase 11 | Pending |
-| WORK-03 | Phase 11 | Pending |
-| WORK-04 | Phase 11 | Pending |
-| WORK-05 | Phase 11 | Pending |
+| WORK-01 | Phase 11 | Complete |
+| WORK-02 | Phase 11 | Complete |
+| WORK-03 | Phase 11 | Complete |
+| WORK-04 | Phase 11 | Complete |
+| WORK-05 | Phase 11 | Complete |
 | WORK-06 | Phase 11 | Pending |
 | WORK-07 | Phase 11 | Pending |
 | WORK-08 | Phase 11 | Pending |
-| WORK-09 | Phase 11 | Pending |
+| WORK-09 | Phase 11 | Complete |
 | AGEN-01 | Phase 12 | Pending |
 | AGEN-02 | Phase 12 | Pending |
 | AGEN-03 | Phase 12 | Pending |
