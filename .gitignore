@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.*
+.env.save
+.env.save.1
+secrets/
+
+# IDE
+.idea
+.vscode
+
+# Claude Code / MCP
+.claude/
+.mcp.json
+
+# Shell dotfiles
+.bash_profile
+.bashrc
+.zshrc
+.zprofile
+.profile
+.gitconfig
+.ripgreprc
+
+# Stray git internals
+HEAD
+objects
+refs
+hooks
+config
+.gitmodules

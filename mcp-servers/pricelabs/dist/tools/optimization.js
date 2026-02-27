@@ -43,7 +43,14 @@ export function registerOptimizationTools(server, db, apiClient, cache, rateLimi
             const listingCacheKey = `listing:${params.listing_id}:${params.pms}`;
             const listingResponse = await fetchWithFallback(listingCacheKey, () => apiClient
                 .get(`/v1/listings/${params.listing_id}?pms=${encodeURIComponent(params.pms)}`)
-                .then((r) => r.data), cache, rateLimiter, SNAPSHOT_CACHE_TTL_MS);
+                .then((r) => {
+                // API returns { listings: [listing] } wrapper even for single listing
+                const listings = r.data.listings;
+                if (!listings || listings.length === 0) {
+                    throw new Error(`Listing ${params.listing_id} not found`);
+                }
+                return listings[0];
+            }), cache, rateLimiter, SNAPSHOT_CACHE_TTL_MS);
             const listing = listingResponse.data;
             // b. Fetch existing overrides if date range provided
             let existingOverrides = [];
@@ -51,7 +58,7 @@ export function registerOptimizationTools(server, db, apiClient, cache, rateLimi
                 const overridesCacheKey = `overrides:${params.listing_id}:${params.pms}:${params.start_date}:${params.end_date}`;
                 const overridesResponse = await fetchWithFallback(overridesCacheKey, () => apiClient
                     .get(`/v1/listings/${params.listing_id}/overrides?pms=${encodeURIComponent(params.pms)}&start_date=${params.start_date}&end_date=${params.end_date}`)
-                    .then((r) => r.data), cache, rateLimiter, SNAPSHOT_CACHE_TTL_MS);
+                    .then((r) => r.data.overrides), cache, rateLimiter, SNAPSHOT_CACHE_TTL_MS);
                 existingOverrides = overridesResponse.data;
             }
             // c. Build snapshot object
