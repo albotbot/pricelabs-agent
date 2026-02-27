@@ -78,7 +78,11 @@ Plans:
   3. Auth profiles exist at `~/.openclaw/agents/pricelabs/agent/auth-profiles.json` and agent can make LLM calls
   4. Agent responds to "hello" with the SOUL.md revenue analyst persona, not the main agent personality
   5. Agent responds to "show me my listings" with real PriceLabs API data from all 28 MCP tools
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 12-01-PLAN.md -- Deploy workspace, create agent directory with auth, merge agent entry into live openclaw.json, restart gateway
+- [ ] 12-02-PLAN.md -- Verify sandbox tool visibility (28 tools), test Prism persona and real API data access via CLI
 
 ### Phase 13: Channel Routing
 **Goal**: Dedicated Telegram bot and Slack channel route exclusively to the PriceLabs agent while existing main agent messaging continues unaffected
@@ -132,7 +136,7 @@ Plans:
 | 9. OpenClaw Deployment | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 10. Messaging Integration | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 11. Workspace Brain | 2/2 | Complete    | 2026-02-27 | - |
-| 12. Agent Registration | v1.2 | 0/? | Not started | - |
+| 12. Agent Registration | v1.2 | 0/2 | Planned | - |
 | 13. Channel Routing | v1.2 | 0/? | Not started | - |
 | 14. Permanent Cron Jobs | v1.2 | 0/? | Not started | - |
 | 15. End-to-End Validation | v1.2 | 0/? | Not started | - |
