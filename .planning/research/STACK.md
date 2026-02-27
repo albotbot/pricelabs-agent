@@ -1,224 +1,166 @@
-# Technology Stack
+# Stack Research
 
-**Project:** PriceLabs AI Revenue Management Agent
-**Researched:** 2026-02-22
-**Overall Confidence:** MEDIUM-HIGH
+**Domain:** OpenClaw multi-agent configuration, workspace files, channel routing, and cron jobs for a dedicated PriceLabs agent
+**Researched:** 2026-02-26
+**Confidence:** HIGH
 
----
+## Context: What Already Exists (DO NOT change)
 
-## Executive Stack Decision
+This is NOT a greenfield stack decision. v1.1 shipped with a working system:
 
-This agent runs **entirely within the OpenClaw runtime**. There is no standalone application server, no separate Node.js process to deploy, and no custom web framework. OpenClaw IS the runtime. The stack decisions below center on how to structure content within OpenClaw's skill/MCP/cron/channel architecture, not on choosing between web frameworks.
+- TypeScript MCP server with 28 tools (`mcp-servers/pricelabs/`)
+- OpenClaw plugin bridge (`openclaw/extensions/pricelabs/`) via stdio JSON-RPC
+- SQLite persistence (7 tables) at `~/.pricelabs-agent/data.sqlite`
+- 4 skill files in `openclaw/skills/`
+- `openclaw.json` with single-agent config (agent id: `pricelabs`)
+- 4 cron jobs in `openclaw/cron/jobs.json` (daily health x2, weekly optimization x2)
+- Slack (socket mode) + Telegram (long polling) channels connected
 
----
+**v1.2 adds NO new code or packages.** This milestone is purely OpenClaw configuration and workspace file authoring.
 
 ## Recommended Stack
 
-### Core Runtime
+### Core Technologies (config-only, no new packages)
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| OpenClaw Gateway | 2026.2.x | Agent runtime, scheduling, channel routing | The entire agent runs here. Skills define behavior, cron drives automation, channels deliver output. No alternative -- this is the project constraint. | HIGH |
-| Claude Opus 4.6 | Current | LLM backbone for reasoning and analysis | OpenClaw's configured model. Handles revenue analysis, alert generation, natural language interaction. | HIGH |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| OpenClaw Gateway | v2026.1.6+ | Multi-agent runtime, cron scheduler, channel routing | Already deployed. Per-agent sandbox + tool config available since v2026.1.6. Multi-agent routing is a first-class feature. |
+| OpenClaw `agents.list[]` | N/A (config) | Declare the `pricelabs` agent as an isolated brain with dedicated workspace | Documented pattern for multi-agent. Each agent gets its own workspace, agentDir, sessions. No code needed. |
+| OpenClaw `bindings[]` | N/A (config) | Route inbound Telegram/Slack messages to the `pricelabs` agent deterministically | Most-specific-wins routing. Peer bindings (channel + peer ID) beat channel-wide rules. Supports Slack channel ID and Telegram chat ID binding. |
+| OpenClaw `cron` CLI | N/A (CLI) | Register permanent cron jobs with `--agent pricelabs` flag | Cron supports `agentId` field per job. CLI: `openclaw cron add --agent pricelabs`. Jobs persist in `~/.openclaw/cron/jobs.json`. |
+| Markdown workspace files | N/A (files) | Agent identity, behavior, and domain knowledge | Standard OpenClaw workspace contract. Files loaded at session start. No schema enforcement -- plain Markdown. |
 
-**Rationale:** OpenClaw is not a library we are importing -- it is the operating environment. Every component below plugs into OpenClaw's extension points: skills, MCP servers, cron jobs, and channel adapters. This distinction matters because it means we do NOT need Express, Fastify, or any web server. We do NOT need a separate process manager. OpenClaw's Gateway handles lifecycle, scheduling, and message routing.
+### Workspace Files (new files to create)
 
-### Skill Architecture: Multi-Skill with Shared MCP
+| File | Purpose | When Loaded |
+|------|---------|-------------|
+| `AGENTS.md` | Operating instructions: how the agent should use tools, respond to users, handle approvals | Every session start |
+| `SOUL.md` | Persona and tone: "You are a PriceLabs revenue management agent..." | Every session start |
+| `USER.md` | User context: who the operator is, preferences, property portfolio context | Every session start |
+| `IDENTITY.md` | Agent name, emoji, theme (e.g., "PriceLabs Agent", chart emoji) | Bootstrap + identity resolution |
+| `TOOLS.md` | Notes about the 28 pricelabs_* tools: when to use which, parameter conventions | Every session start |
+| `MEMORY.md` | Long-term curated facts: portfolio specifics, learned preferences, pricing history notes | Main session only (not group/cron) |
+| `HEARTBEAT.md` | NOT recommended for v1.2 -- cron jobs handle all scheduling | N/A |
+| `BOOT.md` | Optional startup checklist on gateway restart (keep minimal or skip) | Gateway restart |
+| `BOOTSTRAP.md` | One-time ritual for new workspace; delete after first run | First run only |
+| `skills/` | Existing 4 skill files move here as workspace-scoped skills | Every session |
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Workspace Skills | N/A | Agent behavior definitions | Skills in `~/.openclaw/workspace/skills/` define what the agent can do. Each skill is a SKILL.md with YAML frontmatter and natural language instructions. | HIGH |
-| Multi-skill design | N/A | Separation of concerns | One monolithic skill would be unwieldy. Separate skills for monitoring, analysis, pricing actions, and onboarding keep instructions focused and avoid prompt bloat (each skill costs ~97 chars + field lengths in context). | HIGH |
+### Channel Configuration (config changes)
 
-**Skill breakdown (5 skills recommended):**
+| Component | Configuration Pattern | Why This Approach |
+|-----------|----------------------|-------------------|
+| Telegram: dedicated bot | `channels.telegram.accounts.pricelabs.botToken` (new account) | OpenClaw multi-account Telegram: one BotFather bot per agent. Each account gets its own `botToken`. Bound to agent via `bindings`. Completely isolated from main bot. |
+| Slack: dedicated channel | `bindings[].match.channel: "slack", peer.kind: "channel", peer.id: "<channel_id>"` | Route a specific Slack channel (#pricelabs) to the pricelabs agent. Single Slack app, single bot token -- routing is per-channel via bindings, not per-account. |
+| Slack: same app token | Reuse existing `SLACK_APP_TOKEN` / `SLACK_BOT_TOKEN` | Slack multi-agent does NOT require multiple Slack apps. One app can serve multiple agents by routing channels/DMs via bindings. Creating a second Slack app is unnecessary overhead. |
 
-| Skill Name | Trigger | Responsibility |
-|------------|---------|----------------|
-| `pricelabs-monitor` | Cron (daily/weekly) | Health checks, occupancy alerts, sync freshness, daily/weekly summaries |
-| `pricelabs-analyze` | User-invoked | Interactive queries -- "How is listing X performing?", market analysis, pricing breakdowns |
-| `pricelabs-optimize` | User-invoked + cron | Base price recommendations, DSO management, orphan gap detection |
-| `pricelabs-action` | User-invoked (human-in-loop) | Execute pricing changes (base price updates, DSO creation/deletion, push sync). Always requires confirmation. |
-| `pricelabs-report` | Cron (monthly) | Portfolio KPI reports, monthly strategy reviews, booking pace analysis |
+### Cron Job Configuration (CLI commands)
 
-**Why multi-skill over single-skill:**
-- Token economy: Only relevant skills load into context for a given interaction. A single skill with all 7 workflows would consume ~2000+ tokens of instructions on every turn.
-- Separation of read vs write: `pricelabs-action` is the only skill that mutates data. It can have stricter guardrails (confirmation prompts, logging) without cluttering read-only skills.
-- Cron targeting: Different cron jobs invoke different skills. The daily monitor does not need optimization logic in context.
+| Job | Schedule | Channel | Agent Flag | Delivery Target |
+|-----|----------|---------|------------|-----------------|
+| Daily health (Slack) | `0 8 * * *` CT | slack | `--agent pricelabs` | `channel:<pricelabs_channel_id>` |
+| Daily health (Telegram) | `0 8 * * *` CT | telegram | `--agent pricelabs` | `<pricelabs_bot_chat_id>` |
+| Weekly optimization (Slack) | `0 10 * * 1` CT | slack | `--agent pricelabs` | `channel:<pricelabs_channel_id>` |
+| Weekly optimization (Telegram) | `0 10 * * 1` CT | telegram | `--agent pricelabs` | `<pricelabs_bot_chat_id>` |
 
-**Why NOT more granular skills (e.g., one per workflow):**
-- Diminishing returns. OpenClaw loads all workspace skills into the prompt preamble as an XML list. More skills = more baseline token cost even when not invoked. Five is the sweet spot for this domain.
+## Configuration Syntax (Exact Patterns from Docs)
 
-### MCP Server: Custom PriceLabs MCP
-
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| `@modelcontextprotocol/sdk` | 1.26.x | MCP server framework | Official TypeScript SDK for building MCP servers. Mature (26,000+ dependents), well-documented. | HIGH |
-| Custom `pricelabs-mcp` server | N/A | PriceLabs API wrapper as MCP tools | Exposes all 12 Customer API endpoints as structured MCP tools with input validation, rate limiting, and caching built in. | HIGH |
-| `zod` | 3.25+ | Input/output schema validation | Required peer dependency of MCP SDK. Also validates PriceLabs API payloads before sending. | HIGH |
-| `stdio` transport | N/A | MCP communication channel | OpenClaw spawns MCP servers as child processes communicating over stdin/stdout via JSON-RPC 2.0. Simplest setup, no network overhead, no port management. | HIGH |
-
-**Why a custom MCP server instead of direct API calls from skills:**
-
-This is the critical architectural decision. Two approaches exist:
-
-1. **Skills with bash/curl calls** -- Skills instruct the agent to call the PriceLabs API via `curl` or a script. Simple but fragile: no type safety, no rate limiting, no caching, error handling in natural language is unreliable.
-
-2. **Custom MCP server** (recommended) -- A TypeScript process that exposes PriceLabs endpoints as typed MCP tools. The agent calls `mcp__pricelabs__getListings()` instead of constructing HTTP requests. Benefits:
-   - **Rate limiting built into the server** -- The MCP server tracks request counts and blocks/queues calls exceeding 1000/hr. The agent never needs to worry about rate limits.
-   - **Response caching** -- Listings cached for 1hr, prices for 6hr, neighborhood data for 24hr. Prevents redundant API calls across cron runs.
-   - **Input validation** -- Zod schemas reject invalid DSO percentages (must be -75 to 500), bad date formats, missing required fields before hitting the API.
-   - **Structured responses** -- MCP tools return typed JSON, not raw HTTP responses. The agent gets clean data to reason about.
-   - **Error normalization** -- HTTP 429, 400, 401, 500 all become structured MCP error responses with appropriate retry guidance.
-
-**MCP server configuration in openclaw.json:**
+### 1. Agent Declaration in openclaw.json
 
 ```json5
 {
   agents: {
-    list: [{
-      id: "pricelabs",
-      mcp: {
-        servers: [{
-          name: "pricelabs",
-          transport: "stdio",
-          command: "node",
-          args: ["~/.openclaw/workspace/mcp-servers/pricelabs/dist/index.js"],
-          env: {
-            PRICELABS_API_KEY: "${PRICELABS_API_KEY}",
-            PRICELABS_BASE_URL: "https://api.pricelabs.co"
-          }
-        }]
-      }
-    }]
-  }
+    list: [
+      // Keep existing main agent (if there is one)
+      {
+        id: "main",
+        default: true,
+        workspace: "~/.openclaw/workspace",
+      },
+      // NEW: PriceLabs dedicated agent
+      {
+        id: "pricelabs",
+        name: "PriceLabs Revenue Agent",
+        workspace: "~/.openclaw/workspace-pricelabs",
+        model: "anthropic/claude-opus-4-6",
+        // agentDir auto-resolves to ~/.openclaw/agents/pricelabs/agent
+        sandbox: {
+          mode: "all",
+          scope: "agent",
+          workspaceAccess: "rw",  // Agent needs to write memory files
+        },
+        tools: {
+          // Allow reading workspace + pricelabs plugin tools
+          // Deny dangerous tools that a revenue agent should never use
+          deny: [
+            "group:runtime",    // exec, bash, process
+            "write",            // host file writes (memory tools use workspace writes)
+            "edit",
+            "apply_patch",
+            "browser",
+            "canvas",
+            "nodes",
+            "gateway",
+          ],
+        },
+        // Skills are in the workspace /skills directory
+        // Plugin (pricelabs MCP bridge) is configured via plugins section
+        groupChat: {
+          mentionPatterns: ["@pricelabs", "@PriceLabs", "@pricelabs-agent"],
+        },
+      },
+    ],
+  },
 }
 ```
 
-**MCP Tools to expose (12 tools mapping to 12 API endpoints):**
-
-| MCP Tool | API Endpoint | Input Schema | Caching |
-|----------|-------------|--------------|---------|
-| `getListings` | GET /v1/listings | `{ skipHidden?: bool, onlySyncing?: bool }` | 1hr |
-| `getListing` | GET /v1/listings/{id} | `{ listingId: string }` | 1hr |
-| `updateListings` | POST /v1/listings | `{ listings: [{ id, pms, min?, base?, max?, tags? }] }` | Invalidates cache |
-| `getPrices` | POST /v1/listing_prices | `{ listings: [{ id, pms, dateFrom?, dateTo?, reason?: bool }] }` | 6hr |
-| `getOverrides` | GET /v1/listings/{id}/overrides | `{ listingId: string, pms: string }` | 6hr |
-| `setOverrides` | POST /v1/listings/{id}/overrides | `{ listingId, pms, overrides: Override[] }` | Invalidates cache |
-| `deleteOverrides` | DELETE /v1/listings/{id}/overrides | `{ listingId, pms, dates: string[] }` | Invalidates cache |
-| `getNeighborhoodData` | GET /v1/neighborhood_data | `{ listingId: string, pms: string }` | 24hr |
-| `getReservations` | GET /v1/reservation_data | `{ startDate, endDate, pms?, limit?, offset? }` | 1hr |
-| `pushPrices` | POST /v1/push_prices | `{ listingId: string, pmsName: string }` | No cache |
-| `getRatePlans` | GET /v1/fetch_rate_plans | `{ listingId: string, pmsName: string }` | 6hr |
-| `getPortfolioSummary` | Composite | `{}` | 1hr |
-
-The last tool (`getPortfolioSummary`) is a composite that calls `getListings` then enriches with occupancy/health summaries. This saves the agent from needing multi-step reasoning for the most common query.
-
-### Data Persistence
-
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| SQLite (via MCP server) | Built-in Node.js | Historical data, trend tracking, alert state | Lightweight, zero-ops, ACID-compliant. OpenClaw already uses SQLite for its own memory index. No external DB to provision. | HIGH |
-| OpenClaw Memory (Markdown) | Built-in | Agent working memory, decisions, preferences | OpenClaw's native memory system: `MEMORY.md` for durable facts, `memory/YYYY-MM-DD.md` for daily logs. The agent writes here naturally. | HIGH |
-| MCP server in-process cache | N/A | API response caching | In-memory TTL cache inside the MCP server process. Survives within a session but not across Gateway restarts. Good enough -- SQLite handles durable storage. | MEDIUM |
-
-**Data persistence architecture:**
-
-```
-Layer 1: OpenClaw Memory (Markdown files)
-  - MEMORY.md: Portfolio configuration, user preferences, listing metadata
-  - memory/YYYY-MM-DD.md: Daily monitoring results, alerts triggered, actions taken
-
-Layer 2: SQLite Database (inside MCP server)
-  - Historical snapshots: occupancy, pricing, revenue at daily granularity
-  - Alert history: what was flagged, when, resolution
-  - Comparison baselines: STLY metrics for trend analysis
-
-Layer 3: In-Memory Cache (inside MCP server)
-  - API response cache with TTL per endpoint
-  - Rate limiter state (sliding window counter)
-```
-
-**Why SQLite over file-based JSON storage:**
-- Need to query historical trends: "What was occupancy for listing X over the last 30 days?" JSON files require loading entire files and filtering in code. SQLite handles this with indexed queries.
-- Need atomic writes: Concurrent cron jobs (monitor + optimize) could corrupt a shared JSON file. SQLite provides ACID transactions.
-- Need aggregate queries: Portfolio-level KPIs (avg ADR, total RevPAR) across all listings are trivial SQL but painful JSON manipulation.
-
-**Why SQLite over PostgreSQL/external DB:**
-- Single-user agent. No concurrent write contention requiring a server-based DB.
-- Zero ops: No database server to provision, monitor, back up separately. SQLite file lives alongside the MCP server.
-- OpenClaw already demonstrates SQLite is the right choice for this scale -- it uses SQLite for its own memory indexing.
-
-**SQLite location:** `~/.openclaw/workspace/data/pricelabs.db`
-
-**Schema tables:**
-
-| Table | Purpose | Key Columns |
-|-------|---------|-------------|
-| `listing_snapshots` | Daily listing state | `listing_id, date, occupancy_30, market_occ_30, health_7, base_price, recommended_base` |
-| `price_snapshots` | Price tracking | `listing_id, date, price, uncustomized_price, demand_desc, adr, adr_stly` |
-| `reservation_events` | Booking history | `reservation_id, listing_id, check_in, check_out, booked_date, status, revenue` |
-| `alerts` | Alert log | `id, listing_id, type, severity, message, created_at, resolved_at` |
-| `actions` | Change audit trail | `id, listing_id, action_type, old_value, new_value, approved_by, executed_at` |
-
-### Scheduling (Cron)
-
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| OpenClaw Cron | Built-in | Recurring automated workflows | Native to OpenClaw Gateway. Jobs persist in `~/.openclaw/cron/jobs.json`. Supports cron expressions with timezone, session isolation, and channel delivery. No external scheduler needed. | HIGH |
-
-**Cron job schedule:**
-
-| Job Name | Schedule | Session | Delivery | Skill Invoked |
-|----------|----------|---------|----------|--------------|
-| Daily Health Check | `0 8 * * *` (8am daily) | Isolated | Announce to Slack + Telegram | `pricelabs-monitor` |
-| Price Optimization Scan | `0 9 * * 1,4` (Mon+Thu 9am) | Isolated | Announce to Slack | `pricelabs-optimize` |
-| Weekly Market Analysis | `0 10 * * 1` (Mon 10am) | Isolated | Announce to Slack + Telegram | `pricelabs-analyze` |
-| Monthly Strategy Review | `0 9 1 * *` (1st of month 9am) | Isolated | Announce to Slack + Telegram | `pricelabs-report` |
-| Stale Sync Check | `0 */4 * * *` (every 4 hours) | Isolated | Announce to Slack (critical only) | `pricelabs-monitor` |
-
-**Why isolated sessions for cron:**
-- Prevents cron output from polluting the main chat session history.
-- Each cron run gets fresh context with `[cron:<jobId> <job name>]` prefix for traceability.
-- Cron output delivers directly to messaging channels via `delivery.mode: "announce"`.
-
-**Known issue (2026.2.x):** There is a reported bug where daily cron jobs can skip days (48hr jumps instead of 24hr). Mitigation: Use `0 */4 * * *` for critical monitoring instead of daily-only schedules, and monitor cron run history via `openclaw cron runs --id <jobId>`.
-
-**Example cron job configuration (tool call format):**
+### 2. Bindings for Channel Routing
 
 ```json5
 {
-  "name": "PriceLabs Daily Health Check",
-  "schedule": { "kind": "cron", "expr": "0 8 * * *", "tz": "America/Chicago" },
-  "sessionTarget": "isolated",
-  "wakeMode": "next-heartbeat",
-  "payload": {
-    "kind": "agentTurn",
-    "message": "Run the daily PriceLabs health check. Fetch all listings, check health scores, compare occupancy vs market, flag stale syncs, and generate alert summary. Deliver results as a formatted daily report.",
-    "model": "anthropic/claude-opus-4-6",
-    "timeoutSeconds": 300
-  },
-  "delivery": {
-    "mode": "announce",
-    "channel": "slack",
-    "to": "channel:C_PRICELABS_ALERTS",
-    "bestEffort": true
-  }
+  bindings: [
+    // Telegram: dedicated bot account routes to pricelabs agent
+    {
+      agentId: "pricelabs",
+      match: {
+        channel: "telegram",
+        accountId: "pricelabs",
+      },
+    },
+    // Slack: dedicated #pricelabs channel routes to pricelabs agent
+    {
+      agentId: "pricelabs",
+      match: {
+        channel: "slack",
+        peer: { kind: "channel", id: "C_PRICELABS_CHANNEL_ID" },
+      },
+    },
+  ],
 }
 ```
 
-### Messaging Channels
+### 3. Telegram Multi-Account Configuration
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| Slack (via OpenClaw channel) | Bolt SDK (built-in) | Primary interactive channel | OpenClaw's Slack integration uses Bolt SDK with Socket Mode. No custom Slack app to build -- configure in openclaw.json. Thread support for interactive queries, slash commands for quick actions. | HIGH |
-| Telegram (via OpenClaw channel) | grammY (built-in) | Secondary channel, mobile alerts | OpenClaw's Telegram integration uses grammY library. Long polling by default. Forum topic support for organizing by listing group. Good for on-the-go alerts. | HIGH |
+```json5
+{
+  channels: {
+    telegram: {
+      accounts: {
+        default: {
+          botToken: "${TELEGRAM_BOT_TOKEN}",  // Existing main bot
+          dmPolicy: "pairing",
+        },
+        pricelabs: {
+          botToken: "${TELEGRAM_PRICELABS_BOT_TOKEN}",  // NEW: dedicated PriceLabs bot
+          dmPolicy: "allowlist",
+          allowFrom: ["${TELEGRAM_OWNER_USER_ID}"],  // Only the portfolio owner
+        },
+      },
+    },
+  },
+}
+```
 
-**Why NOT build separate Slack/Telegram bots:**
-- OpenClaw already has production-ready channel adapters for both platforms. Building custom bots with `@slack/bolt` or `grammy` directly would duplicate functionality that already exists.
-- Cron job delivery integrates natively with channel adapters -- `delivery.mode: "announce"` routes cron output directly to Slack channels or Telegram chats.
-- Thread management, message chunking (4000 char limit), streaming, and reaction handling are all built in.
-
-**Slack configuration in openclaw.json:**
+### 4. Slack Channel Configuration
 
 ```json5
 {
@@ -228,280 +170,269 @@ Layer 3: In-Memory Cache (inside MCP server)
       mode: "socket",
       appToken: "${SLACK_APP_TOKEN}",
       botToken: "${SLACK_BOT_TOKEN}",
-      dm: {
-        enabled: true,
-        policy: "allowlist",
-        allowFrom: ["U_OWNER_ID"]
-      },
       channels: {
-        "#pricelabs-alerts": {
-          allow: true,
-          requireMention: false
+        "C_PRICELABS_CHANNEL_ID": {
+          requireMention: false,  // No @mention needed in dedicated channel
+          // users: ["U_OWNER_ID"],  // Optional: restrict to owner only
         },
-        "#pricelabs-reports": {
-          allow: true,
-          requireMention: true
-        }
       },
-      slashCommand: {
-        enabled: true,
-        name: "pricelabs"
-      }
-    }
-  }
+    },
+  },
 }
 ```
 
-**Telegram configuration in openclaw.json:**
+### 5. Permanent Cron Job Registration (CLI)
 
-```json5
-{
-  channels: {
-    telegram: {
-      enabled: true,
-      botToken: "${TELEGRAM_BOT_TOKEN}",
-      dmPolicy: "allowlist",
-      allowFrom: [OWNER_TELEGRAM_ID],
-      groups: {
-        "-100PRICELABS_GROUP": {
-          groupPolicy: "allowlist",
-          requireMention: false,
-          allowFrom: [OWNER_TELEGRAM_ID]
-        }
-      }
-    }
-  }
-}
+```bash
+# Remove old test cron jobs first
+openclaw cron list  # identify existing jobs
+openclaw cron remove <old-job-id>
+
+# Daily health -- Slack
+openclaw cron add \
+  --name "daily-portfolio-health-slack" \
+  --cron "0 8 * * *" \
+  --tz "America/Chicago" \
+  --exact \
+  --session isolated \
+  --message "Run the daily portfolio health check. Follow the Daily Health Check Protocol..." \
+  --model "opus" \
+  --thinking high \
+  --agent pricelabs \
+  --announce \
+  --channel slack \
+  --to "channel:C_PRICELABS_CHANNEL_ID"
+
+# Daily health -- Telegram
+openclaw cron add \
+  --name "daily-portfolio-health-telegram" \
+  --cron "0 8 * * *" \
+  --tz "America/Chicago" \
+  --stagger 30s \
+  --session isolated \
+  --message "Run the daily portfolio health check..." \
+  --model "opus" \
+  --thinking high \
+  --agent pricelabs \
+  --announce \
+  --channel telegram \
+  --to "${TELEGRAM_PRICELABS_CHAT_ID}"
+
+# Weekly optimization -- Slack
+openclaw cron add \
+  --name "weekly-optimization-slack" \
+  --cron "0 10 * * 1" \
+  --tz "America/Chicago" \
+  --exact \
+  --session isolated \
+  --message "Generate the weekly optimization report..." \
+  --model "opus" \
+  --thinking high \
+  --agent pricelabs \
+  --announce \
+  --channel slack \
+  --to "channel:C_PRICELABS_CHANNEL_ID"
+
+# Weekly optimization -- Telegram
+openclaw cron add \
+  --name "weekly-optimization-telegram" \
+  --cron "0 10 * * 1" \
+  --tz "America/Chicago" \
+  --stagger 30s \
+  --session isolated \
+  --message "Generate the weekly optimization report..." \
+  --model "opus" \
+  --thinking high \
+  --agent pricelabs \
+  --announce \
+  --channel telegram \
+  --to "${TELEGRAM_PRICELABS_CHAT_ID}"
 ```
 
-### Supporting Libraries (inside MCP server)
+Key flags explained:
+- `--agent pricelabs`: Pins the cron job to the pricelabs agent (uses its workspace, skills, tools)
+- `--session isolated`: Fresh session per run (no context carry-over, clean agent turn)
+- `--announce`: Deliver output directly to the target channel
+- `--exact` / `--stagger 30s`: Controls timing precision (no auto-stagger for primary, 30s offset for secondary)
+- `--model opus` / `--thinking high`: Per-job model override for quality analysis
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `@modelcontextprotocol/sdk` | 1.26.x | MCP server framework | Always -- core of the MCP server |
-| `zod` | 3.25+ | Schema validation | Always -- validates all API inputs/outputs |
-| `better-sqlite3` | 11.x | SQLite driver for Node.js | Historical data persistence, trend queries |
-| `node-fetch` or built-in `fetch` | Node 22+ built-in | HTTP client for PriceLabs API | All API calls from MCP server to PriceLabs |
-| `typescript` | 5.7+ | Type safety for MCP server | Development-time only |
+## Environment Variables (Additions to ~/.openclaw/.env)
 
-**Why `better-sqlite3` over `sql.js` or `sqlite3`:**
-- Synchronous API matches MCP tool execution model (tools are request/response, not streaming).
-- Best performance for read-heavy workloads (which this is -- mostly querying historical data).
-- No WASM overhead (unlike sql.js).
-- Well-maintained, widely used.
+```bash
+# --- NEW for v1.2 ---
+# Telegram: PriceLabs dedicated bot (create via BotFather /newbot)
+TELEGRAM_PRICELABS_BOT_TOKEN=your-pricelabs-telegram-bot-token
 
-### Infrastructure
+# Telegram: Owner's user ID (for allowlist)
+TELEGRAM_OWNER_USER_ID=123456789
 
-| Technology | Version | Purpose | Why | Confidence |
-|------------|---------|---------|-----|------------|
-| VPS (any Linux provider) | Ubuntu 22.04+ | Host OpenClaw Gateway | OpenClaw needs a persistent process for cron jobs and channel monitors. A $10-15/mo VPS (DigitalOcean, Hetzner, etc.) is sufficient. | HIGH |
-| Node.js | 22.x LTS | MCP server runtime | Required for OpenClaw and MCP TypeScript SDK. Use LTS for stability. | HIGH |
-| systemd | N/A | Process management | Run OpenClaw Gateway as a systemd service for auto-restart on crash. | MEDIUM |
-| Git | N/A | Version control for skills and MCP server | Track SKILL.md changes, MCP server code, configuration. | HIGH |
+# Telegram: Chat ID for the pricelabs bot DM (get from logs after first message)
+TELEGRAM_PRICELABS_CHAT_ID=123456789
 
-**Why a VPS over serverless/local:**
-- OpenClaw's cron system requires the Gateway to be running persistently. Lambda/Cloud Functions cannot host a long-running WebSocket process.
-- Channel monitors (Slack Socket Mode, Telegram long polling) need persistent connections.
-- A $10-15/mo VPS handles everything: OpenClaw Gateway, MCP server, SQLite, cron.
+# Slack: PriceLabs channel ID (create #pricelabs channel, get ID from channel details)
+SLACK_PRICELABS_CHANNEL_ID=C_YOUR_CHANNEL_ID
+```
 
+## Workspace Directory Structure
+
+```
+~/.openclaw/workspace-pricelabs/
+  AGENTS.md          # Operating instructions
+  SOUL.md            # Persona and tone
+  USER.md            # User profile
+  IDENTITY.md        # Name, emoji, theme
+  TOOLS.md           # Tool usage notes
+  MEMORY.md          # Long-term curated memory (optional at start)
+  BOOT.md            # Startup checklist (optional)
+  BOOTSTRAP.md       # One-time ritual (delete after)
+  memory/            # Daily memory logs (auto-created)
+  skills/            # Workspace-scoped skills (4 existing skill files)
+    domain-knowledge/
+      SKILL.md
+    monitoring-protocols/
+      SKILL.md
+    analysis-playbook/
+      SKILL.md
+    optimization-playbook/
+      SKILL.md
+```
+
+**Important:** Skills in the workspace must follow AgentSkills format -- each skill is a directory containing a `SKILL.md` with YAML frontmatter. The existing flat `.md` files need to be restructured into `skills/<name>/SKILL.md` directories with proper frontmatter.
+
+## Skill Migration Format
+
+Each existing skill file (e.g., `openclaw/skills/domain-knowledge.md`) becomes:
+
+```
+~/.openclaw/workspace-pricelabs/skills/domain-knowledge/SKILL.md
+```
+
+With YAML frontmatter added:
+
+```markdown
 ---
+name: domain-knowledge
+description: PriceLabs platform knowledge, API endpoints, pricing concepts, and revenue management domain expertise
+---
+
+[existing content]
+```
+
+The 4 existing skills become 4 AgentSkills directories:
+
+| Current File | New Path | Skill Name |
+|-------------|----------|------------|
+| `openclaw/skills/domain-knowledge.md` | `skills/domain-knowledge/SKILL.md` | `domain-knowledge` |
+| `openclaw/skills/monitoring-protocols.md` | `skills/monitoring-protocols/SKILL.md` | `monitoring-protocols` |
+| `openclaw/skills/analysis-playbook.md` | `skills/analysis-playbook/SKILL.md` | `analysis-playbook` |
+| `openclaw/skills/optimization-playbook.md` | `skills/optimization-playbook/SKILL.md` | `optimization-playbook` |
 
 ## Alternatives Considered
 
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| API Integration | Custom MCP server | Skills with bash/curl | No type safety, no built-in caching, no rate limiting. Agent would need to reason about HTTP errors in natural language. |
-| API Integration | Custom MCP server | Generic REST MCP (dkmaker/mcp-rest-api) | Too generic -- no PriceLabs-specific validation (DSO ranges, currency matching), no domain-aware caching TTLs. |
-| Data Persistence | SQLite (via better-sqlite3) | JSON files in workspace | No indexed queries for historical trends. Concurrent cron writes risk corruption. Aggregate queries are painful. |
-| Data Persistence | SQLite (via better-sqlite3) | PostgreSQL | Over-engineered for single-user agent. Adds ops burden (DB server to maintain). SQLite handles this workload trivially. |
-| Data Persistence | SQLite (via better-sqlite3) | OpenClaw Memory only | Memory is Markdown-based, not queryable for trend analysis. Good for agent working memory, bad for time-series data. |
-| Scheduling | OpenClaw Cron | External cron (system crontab) | Would need to shell out to `openclaw` CLI. Loses session isolation, delivery routing, retry backoff. Reinvents what already exists. |
-| Scheduling | OpenClaw Cron | node-cron in MCP server | MCP servers are stateless tool providers. They should not have their own scheduling. Scheduling belongs in the orchestration layer (OpenClaw). |
-| Messaging | OpenClaw Channels | Custom Slack/Telegram bots | Duplicate effort. OpenClaw already handles auth, message routing, threading, chunking, streaming. Building custom bots adds code to maintain with no benefit. |
-| Skill Design | 5 focused skills | 1 monolithic skill | Token bloat: all instructions load on every turn. No way to target cron to specific behavior subsets. |
-| Skill Design | 5 focused skills | 10+ micro-skills | Diminishing returns. More skills = more baseline token cost in prompt preamble. Five is the right granularity for this domain. |
-| LLM | Claude Opus 4.6 | GPT-5-mini, Gemini 3 | OpenClaw supports model fallbacks, but Opus 4.6 is the best choice for complex revenue analysis reasoning. Could configure fallbacks for cost-sensitive cron jobs. |
+| Recommended | Alternative | Why Not |
+|-------------|-------------|---------|
+| Dedicated Telegram bot (multi-account) | Single bot with peer-based routing | Peer routing on a single bot means the PriceLabs agent shares the bot identity. Dedicated bot gets its own @username, avatar, and `/start` message. BotFather setup takes 30 seconds. |
+| Slack channel binding (peer routing) | Second Slack app (multi-account) | Slack multi-account requires creating and installing a second Slack app, managing two sets of tokens. Channel binding achieves the same routing with zero new infrastructure -- just create a #pricelabs channel and add the existing bot. |
+| Workspace skills (per-agent `skills/`) | Shared skills in `~/.openclaw/skills` | Per-agent workspace skills ensure the PriceLabs domain knowledge is only loaded for the PriceLabs agent. Shared skills would inject PriceLabs protocols into all agents on the gateway. |
+| `workspaceAccess: "rw"` | `workspaceAccess: "ro"` (current) | Agent needs to write memory files (`memory/YYYY-MM-DD.md`, `MEMORY.md`). Read-only workspace blocks the memory flush system. Change from `ro` to `rw` for this agent only. |
+| Isolated cron sessions | Main session cron (systemEvent) | Isolated sessions give clean context per run, don't pollute main session history, and support model/thinking overrides. PriceLabs health checks are standalone tasks that don't need conversational context. |
+| `--agent pricelabs` flag on cron | No agent flag (default agent) | Without `--agent`, cron jobs fall back to the default agent, which uses the wrong workspace, skills, and tools. The `--agent` flag is mandatory for multi-agent cron. |
+| Separate workspace `~/.openclaw/workspace-pricelabs` | Shared workspace `~/.openclaw/workspace` | Multi-agent requires separate workspaces to prevent cross-contamination of memory, identity, and skills between agents. OpenClaw docs explicitly warn against sharing workspaces. |
 
----
+## What NOT to Add
 
-## What NOT to Use
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| New npm packages | v1.2 is configuration-only. The MCP server and plugin bridge are complete. No TypeScript code changes needed. | OpenClaw config + workspace Markdown files |
+| `openclaw channels login` for Telegram | Telegram does NOT use `openclaw channels login`. Configure `botToken` in config/env, then start gateway. Only WhatsApp uses the login flow. | Set `TELEGRAM_PRICELABS_BOT_TOKEN` in env |
+| Multiple Slack apps / workspaces | One Slack app can serve multiple agents via channel bindings. Creating a second app doubles OAuth management for no routing benefit. | Peer binding: `match.channel: "slack", match.peer.kind: "channel"` |
+| Custom `agentDir` override | Auto-resolves to `~/.openclaw/agents/pricelabs/agent`. Only override if you have a non-standard state directory. | Let OpenClaw auto-resolve |
+| Heartbeat for PriceLabs agent | Cron jobs handle all scheduled work. Heartbeat would add token overhead on every 30-min cycle for no benefit. PriceLabs agent has no inbox-checking workload. | Cron (isolated) for all scheduled tasks |
+| Agent-to-agent messaging | `tools.agentToAgent` is off by default and unnecessary. PriceLabs agent should be fully self-contained -- no cross-talk with other agents. | Keep `agentToAgent` disabled |
+| Native MCP `mcp.servers` gateway config | This does not exist at the gateway level. MCP is configured per-agent via `agents.list[].mcp.servers`. Already correct in v1.1 config. | Keep existing `agents.list[].mcp.servers` pattern |
+| `chat:write.customize` Slack scope | Only needed if you want the agent to post with a custom username/icon that differs from the Slack app name. The Slack app already has the right name. | Use existing bot identity; agent identity is set via `agents.list[].identity` for internal routing only |
 
-| Technology | Why Not |
-|------------|---------|
-| Express/Fastify/Hono web server | OpenClaw IS the server. Do not build a separate web application. |
-| Separate Slack Bolt app | OpenClaw has built-in Slack support via Bolt SDK. A separate app duplicates functionality. |
-| Separate grammY Telegram bot | Same -- OpenClaw has built-in Telegram support via grammY. |
-| Redis for caching | Overkill. In-memory TTL cache in the MCP server process handles API response caching. If the process restarts, a few cache misses are fine -- the API is called again. |
-| Docker/Kubernetes | A single OpenClaw instance with one MCP server does not need container orchestration. systemd on a VPS is simpler and cheaper. |
-| Prisma/TypeORM/Drizzle | For 5 simple SQLite tables with straightforward queries, raw SQL via better-sqlite3 is cleaner. ORM overhead adds complexity without benefit at this scale. |
-| LangChain/LangGraph | OpenClaw IS the agent orchestration framework. LangChain would add an unnecessary abstraction layer between the agent and its tools. |
-| Supabase/Firebase | External hosted databases add latency, cost, and complexity. SQLite file on the same machine has zero network overhead. |
-| cron npm package | OpenClaw has native cron. Using a library-level scheduler inside the MCP server would fight against OpenClaw's architecture. |
+## Stack Patterns by Scenario
 
----
+**If the main agent does NOT exist yet (PriceLabs is the only agent):**
+- Set `default: true` on the `pricelabs` agent entry
+- Bindings are optional for channel-wide routing (Telegram account binding is still needed for multi-account)
+- Slack channel binding still recommended for clean channel isolation
 
-## Installation & Setup
+**If the main agent already exists (PriceLabs is a second agent):**
+- Keep `default: true` on the `main` agent
+- PriceLabs agent MUST have explicit bindings for every channel/peer it should receive
+- Messages not matching any binding fall through to the default agent
+- Peer bindings (most specific) always beat channel-wide bindings
 
-### Prerequisites
+**If the owner wants DMs to the PriceLabs Telegram bot:**
+- Set `dmPolicy: "allowlist"` on the `pricelabs` Telegram account
+- Add owner's numeric user ID to `allowFrom`
+- DMs collapse to `agent:pricelabs:main` session key (full main-session context)
 
-```bash
-# Node.js 22 LTS
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
+**If the owner wants approval flow via Telegram DM:**
+- DMs to the dedicated PriceLabs bot carry full agent context
+- Approval messages route to the PriceLabs agent automatically (binding matches the account)
+- No special configuration needed beyond the account binding
 
-# OpenClaw (follow official install for your platform)
-# https://docs.openclaw.ai/getting-started/installation
-```
+## Critical Notes on Existing Config
 
-### MCP Server Setup
+The current `openclaw.json` has the agent listed under `agents.list[]` with `id: "pricelabs"` but uses `agents.defaults` for sandbox/tools. For v1.2:
 
-```bash
-# Create MCP server directory
-mkdir -p ~/.openclaw/workspace/mcp-servers/pricelabs
-cd ~/.openclaw/workspace/mcp-servers/pricelabs
+1. **Move sandbox config to per-agent**: The `agents.defaults.sandbox` becomes the fallback. Per-agent `sandbox` in `agents.list[].sandbox` overrides it. PriceLabs agent needs `workspaceAccess: "rw"` (currently `"ro"` in defaults).
 
-# Initialize project
-npm init -y
-npm install @modelcontextprotocol/sdk zod better-sqlite3
-npm install -D typescript @types/node @types/better-sqlite3
+2. **Move tool deny to per-agent**: The current `agents.defaults.tools.deny` is overly restrictive for the PriceLabs agent (denies `cron` tool which the agent may need for self-scheduling). Per-agent `tools` in `agents.list[].tools` overrides defaults.
 
-# Build
-npx tsc
+3. **Skills via instructions field vs workspace skills/**: The current config uses `instructions: [...]` pointing to file paths. In multi-agent, prefer workspace `skills/` directory so skills are scoped to the agent. The `instructions` field still works but is NOT the standard AgentSkills pattern. The `instructions` field should be removed from the agent entry once skills are in the workspace.
 
-# MCP server entry point: dist/index.js
-```
+4. **MCP config stays**: The `mcp.servers` under the agent entry is correct and should not change. The existing MCP server configuration with env vars for API key, base URL, DB path, and writes-enabled flag is the right pattern.
 
-### Skills Setup
+5. **Existing cron jobs need `agentId`**: The 4 jobs in `openclaw/cron/jobs.json` lack an `agentId` field. They need to be re-registered with `--agent pricelabs` or edited with `openclaw cron edit <id> --agent pricelabs`.
 
-```bash
-# Create skill directories
-mkdir -p ~/.openclaw/workspace/skills/pricelabs-monitor
-mkdir -p ~/.openclaw/workspace/skills/pricelabs-analyze
-mkdir -p ~/.openclaw/workspace/skills/pricelabs-optimize
-mkdir -p ~/.openclaw/workspace/skills/pricelabs-action
-mkdir -p ~/.openclaw/workspace/skills/pricelabs-report
+6. **Cron delivery targets change**: Current jobs deliver to `${SLACK_HEALTH_CHANNEL}` and `${TELEGRAM_HEALTH_CHAT_ID}`. v1.2 jobs should deliver to the new dedicated channel/bot: the Slack `#pricelabs` channel and the dedicated Telegram bot's DM chat ID.
 
-# Each directory gets a SKILL.md file
-```
+## Version Compatibility
 
-### Environment Variables
+| Component | Minimum Version | Notes |
+|-----------|-----------------|-------|
+| OpenClaw Gateway | v2026.1.6+ | Per-agent sandbox + tool config, `agents.list[]` with per-agent `sandbox` and `tools` |
+| OpenClaw CLI | v2026.1.6+ | `openclaw cron add --agent <id>` flag support |
+| Telegram Bot API | Any current | Standard BotFather bot creation, long polling |
+| Slack API | Socket Mode + bot scopes | Existing scopes sufficient; add `chat:write.customize` only if agent identity in messages is desired |
+| Node.js | 20+ (already running) | OpenClaw Gateway requirement |
 
-```bash
-# Required
-export PRICELABS_API_KEY="your-pricelabs-api-key"
-export SLACK_APP_TOKEN="xapp-..."
-export SLACK_BOT_TOKEN="xoxb-..."
-export TELEGRAM_BOT_TOKEN="123:abc..."
+## Migration Path from v1.1
 
-# Optional
-export ANTHROPIC_API_KEY="sk-ant-..."  # If using Anthropic directly
-```
-
-### OpenClaw Configuration
-
-The main `~/.openclaw/openclaw.json` ties everything together: agent definition, MCP server, channels, and cron jobs. See the configuration examples in the sections above.
-
----
-
-## File/Directory Map
-
-```
-~/.openclaw/
-  openclaw.json                          # Main configuration
-  workspace/
-    MEMORY.md                            # Durable agent memory
-    memory/                              # Daily logs
-      YYYY-MM-DD.md
-    skills/
-      pricelabs-monitor/SKILL.md         # Monitoring skill
-      pricelabs-analyze/SKILL.md         # Analysis skill
-      pricelabs-optimize/SKILL.md        # Optimization skill
-      pricelabs-action/SKILL.md          # Action skill (write ops)
-      pricelabs-report/SKILL.md          # Reporting skill
-    mcp-servers/
-      pricelabs/
-        src/
-          index.ts                       # MCP server entry point
-          tools/                         # Tool implementations
-            listings.ts
-            prices.ts
-            overrides.ts
-            neighborhoods.ts
-            reservations.ts
-            sync.ts
-          services/
-            api-client.ts               # PriceLabs HTTP client
-            rate-limiter.ts             # Sliding window rate limiter
-            cache.ts                    # In-memory TTL cache
-            db.ts                       # SQLite connection + migrations
-          schemas/                       # Zod schemas
-            listing.ts
-            price.ts
-            override.ts
-        dist/                            # Compiled JS
-        package.json
-        tsconfig.json
-    data/
-      pricelabs.db                       # SQLite database
-  cron/
-    jobs.json                            # Persisted cron jobs
-    runs/                                # Cron execution history
-  memory/
-    pricelabs.sqlite                     # OpenClaw memory index
-```
-
----
-
-## API Rate Budget Verification
-
-With 1000 requests/hour from PriceLabs:
-
-| Operation | Requests | Frequency | Monthly Total |
-|-----------|----------|-----------|--------------|
-| Get all listings | 1 | 6x/day (cron + interactive) | ~180 |
-| Get prices (batch) | 1 per batch | 2x/week + interactive | ~50 |
-| Get neighborhood data | 1 per listing | 1x/week (50 listings) | ~200 |
-| Get reservations | 1-5 (paginated) | 1x/day | ~150 |
-| Get/Set DSOs | 2 per listing | 1x/week (subset) | ~100 |
-| Push prices | 1 per listing | As needed | ~50 |
-| Interactive queries | Variable | ~10/day | ~300 |
-
-**Total estimated: ~1,030 requests/month.** Well within the 1000/hour limit. Even the busiest hour (weekly analysis of 50 listings) uses ~55 requests, leaving 945 requests of headroom. The MCP server's caching layer further reduces actual API calls.
-
----
+1. **Create workspace directory**: `mkdir -p ~/.openclaw/workspace-pricelabs/{skills,memory}`
+2. **Write workspace files**: AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, BOOT.md
+3. **Restructure skills**: Convert flat skill `.md` files to AgentSkills directory format (`skills/<name>/SKILL.md`)
+4. **Create Telegram bot**: BotFather `/newbot`, save token to env
+5. **Create Slack channel**: Create #pricelabs, note the channel ID
+6. **Update openclaw.json**: Add agent workspace, add `bindings[]`, add Telegram `accounts.pricelabs`, update sandbox to `rw`
+7. **Register cron jobs**: `openclaw cron add --agent pricelabs ...` (4 jobs) OR edit existing jobs with `openclaw cron edit <id> --agent pricelabs`
+8. **Update cron delivery targets**: Point to new dedicated channel/bot IDs
+9. **Restart gateway**: `openclaw gateway restart`
+10. **Validate**: `openclaw agents list --bindings`, `openclaw channels status --probe`, send test message to both channels
 
 ## Sources
 
-### OpenClaw (Official Docs) -- HIGH Confidence
-- [Skills Documentation](https://docs.openclaw.ai/tools/skills) -- Skill format, YAML frontmatter, loading hierarchy
-- [Cron Jobs](https://docs.openclaw.ai/automation/cron-jobs) -- Scheduling, session isolation, delivery modes
-- [Memory System](https://docs.openclaw.ai/concepts/memory) -- SQLite indexing, FTS5, persistence architecture
-- [Telegram Channel](https://docs.openclaw.ai/channels/telegram) -- grammY integration, access control, topic support
-- [Slack Channel](https://docs.openclaw.ai/channels/slack) -- Bolt SDK, Socket Mode, slash commands
-- [Configuration Reference](https://docs.openclaw.ai/gateway/configuration) -- openclaw.json structure
+- OpenClaw docs: `/home/NGA/openclaw/docs/concepts/multi-agent.md` -- Multi-agent routing (bindings, accounts, per-agent workspace) [HIGH confidence, official docs]
+- OpenClaw docs: `/home/NGA/openclaw/docs/concepts/agent-workspace.md` -- Workspace file map (AGENTS.md, SOUL.md, etc.) [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/automation/cron-jobs.md` -- Cron job creation, `agentId` field, delivery config [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/cli/cron.md` -- CLI `--agent` flag, `--announce`, `--exact`/`--stagger` [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/channels/telegram.md` -- Multi-account Telegram, BotFather setup, `accounts.<id>.botToken` [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/channels/slack.md` -- Socket mode, channel config, per-channel settings [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/channels/channel-routing.md` -- Routing rules, session keys, peer matching [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/tools/skills.md` -- Per-agent vs shared skills, AgentSkills format [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/tools/multi-agent-sandbox-tools.md` -- Per-agent sandbox/tool config, precedence [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/concepts/memory.md` -- Memory file layout, auto-flush, memory search [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/automation/cron-vs-heartbeat.md` -- When to use cron vs heartbeat [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/start/bootstrapping.md` -- Bootstrap ritual, workspace seeding [HIGH confidence]
+- OpenClaw docs: `/home/NGA/openclaw/docs/concepts/agent.md` -- Agent runtime, workspace contract, bootstrap files [HIGH confidence]
+- Existing config: `/mnt/c/Projects/pricelabs-agent/openclaw/openclaw.json` -- Current v1.1 configuration [verified]
+- Existing cron: `/mnt/c/Projects/pricelabs-agent/openclaw/cron/jobs.json` -- Current v1.1 cron job definitions [verified]
+- Existing plugin: `/mnt/c/Projects/pricelabs-agent/openclaw/extensions/pricelabs/openclaw.plugin.json` -- Plugin manifest [verified]
 
-### OpenClaw (Community/Third-Party) -- MEDIUM Confidence
-- [OpenClaw Configuration Guide 2026](https://moltfounders.com/openclaw-configuration) -- Annotated config reference
-- [Custom Skill Creation Guide](https://zenvanriel.nl/ai-engineer-blog/openclaw-custom-skill-creation-guide/) -- Skill design patterns
-- [OpenClaw Cron Jobs Guide](https://zenvanriel.nl/ai-engineer-blog/openclaw-cron-jobs-proactive-ai-guide/) -- Practical cron patterns
-- [My OpenClaw Production Stack](https://medium.com/@rentierdigital/the-complete-openclaw-architecture-that-actually-scales-memory-cron-jobs-dashboard-and-the-c96e00ab3f35) -- Real-world deployment reference
-- [Channel Architecture Deep Dive](https://deepwiki.com/openclaw/openclaw/8-channels) -- Channel monitor pattern
-
-### MCP Protocol -- HIGH Confidence
-- [@modelcontextprotocol/sdk on npm](https://www.npmjs.com/package/@modelcontextprotocol/sdk) -- v1.26.0, 26,000+ dependents
-- [Build an MCP Server (Official)](https://modelcontextprotocol.io/docs/develop/build-server) -- TypeScript server guide
-- [MCP TypeScript SDK GitHub](https://github.com/modelcontextprotocol/typescript-sdk) -- Source, examples, transport docs
-
-### PriceLabs API -- HIGH Confidence
-- [Customer API SwaggerHub](https://app.swaggerhub.com/apis-docs/Customer_API/customer_api/1.0.0-oas3) -- Endpoint reference
-- [Postman Collection](https://documenter.getpostman.com/view/507656/SVSEurQC) -- Request/response examples
-- [PriceLabs API Help](https://help.pricelabs.co/portal/en/kb/articles/pricelabs-api) -- Auth, rate limits, setup
-
-### SQLite -- HIGH Confidence
-- [Local-First RAG: SQLite for AI Agent Memory](https://www.pingcap.com/blog/local-first-rag-using-sqlite-ai-agent-memory-openclaw/) -- SQLite in OpenClaw context
-- [better-sqlite3 on npm](https://www.npmjs.com/package/better-sqlite3) -- Synchronous SQLite driver
-
-### OpenClaw GitHub -- HIGH Confidence
-- [openclaw/openclaw](https://github.com/openclaw/openclaw) -- Main repository (100k+ stars)
-- [MCP Support Issue #4834](https://github.com/openclaw/openclaw/issues/4834) -- Native MCP support tracking
-- [Cron Skip Bug #17852](https://github.com/openclaw/openclaw/issues/17852) -- Known daily cron skip issue
+---
+*Stack research for: PriceLabs Agent v1.2 -- Agent Identity & Production Setup*
+*Researched: 2026-02-26*

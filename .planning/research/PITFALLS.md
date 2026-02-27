@@ -1,479 +1,372 @@
-# Domain Pitfalls
+# Pitfalls Research
 
-**Domain:** AI Agent for STR Revenue Management (PriceLabs + OpenClaw)
-**Researched:** 2026-02-22
+**Domain:** Adding a dedicated OpenClaw agent to an existing single-agent setup (v1.2 milestone)
+**Researched:** 2026-02-26
+**Confidence:** HIGH (sourced from OpenClaw official docs, actual v1.1 post-mortems, and live config inspection)
 
-This document catalogs pitfalls across three risk domains: (1) PriceLabs API integration, (2) OpenClaw platform security, and (3) STR revenue management logic. Pitfalls are ordered by severity within each tier. Each includes detection signals and which development phase should address it.
+This document catalogs pitfalls specific to the v1.2 migration: transforming the PriceLabs integration from a plugin on the main agent into a dedicated agent with its own workspace, bindings, Telegram bot, Slack channel routing, and permanent cron jobs. These are not generic pitfalls -- each one references actual OpenClaw behavior verified against the docs and the current `openclaw.json` configuration.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause financial loss, security breaches, or require architectural rewrites.
+### Pitfall 1: Sandbox Tool Allow List Does Not Inherit to New Agent
+
+**What goes wrong:**
+The new PriceLabs agent is created under `agents.list[]` but the `pricelabs_*` tool glob that was added to `tools.sandbox.tools.allow` in v1.1 does not apply. The agent silently loses access to all 28 PriceLabs tools. The agent responds to "How is my portfolio doing?" as a generic AI because the tools never reach the LLM.
+
+**Why it happens:**
+This is the exact root cause from the v1.1 debug session (`.planning/debug/openclaw-plugin-tools.md`). OpenClaw's sandbox tool policy pipeline (documented in `/tools/multi-agent-sandbox-tools`) has a strict precedence chain:
+
+1. Global tool policy (`tools.allow`/`tools.deny`)
+2. Agent-specific tool policy (`agents.list[].tools.allow/deny`)
+3. Sandbox tool policy (`tools.sandbox.tools` OR `agents.list[].tools.sandbox.tools`)
+
+The critical behavior: "If `agents.list[].tools.sandbox.tools` is set, it **replaces** `tools.sandbox.tools` for that agent." Conversely, if the new agent has its own `sandbox` block but no `tools.sandbox.tools`, it falls back to `agents.defaults.sandbox`, which uses `DEFAULT_TOOL_ALLOW` -- the hardcoded list of 13 core tools that does NOT include `pricelabs_*`.
+
+The current config has `tools.sandbox.tools.allow` at the global level with `pricelabs_*`. But once a new agent entry exists in `agents.list[]` with its own `sandbox` config, the resolution path changes. If the new agent's sandbox scope or mode differs from the default, OpenClaw may re-evaluate which tool policy layer applies, and the global `tools.sandbox.tools.allow` may or may not carry through depending on the exact combination.
+
+**How to avoid:**
+1. Explicitly set `agents.list[].tools.sandbox.tools.allow` on the PriceLabs agent entry, including both the 13 core tools AND the `pricelabs_*` glob.
+2. Do NOT assume the global `tools.sandbox.tools.allow` inherits. Per the docs: "each level can further restrict tools, but cannot grant back denied tools from earlier levels."
+3. After creating the agent, run `openclaw sandbox explain --agent pricelabs` to verify the effective tool policy includes `pricelabs_*`.
+4. Test immediately: send a PriceLabs-specific question to the new agent and confirm tool calls appear in the gateway log.
+
+**Warning signs:**
+- Agent responds to portfolio questions with generic advice instead of calling `pricelabs_get_listings`.
+- Gateway log shows `[tools] filtering tools for agent:pricelabs` with no `pricelabs_*` entries in the resolved list.
+- `openclaw sandbox explain --agent pricelabs` does not show `pricelabs_*` in the allowed tools.
+
+**Phase to address:**
+Phase 1 (Agent Creation). The very first thing after creating the agent entry. Must be verified BEFORE any other testing.
 
 ---
 
-### Pitfall 1: DSO Overwrites All Safety Rails Including Min Price
+### Pitfall 2: Plugin Tools Registered Globally But Agent Cannot See Them
 
-**What goes wrong:** Date-Specific Overrides (DSOs) have the highest priority among ALL PriceLabs settings. When the agent writes a DSO with `price_type: "fixed"`, that price becomes the actual nightly rate regardless of the listing's minimum price floor. A DSO of $50 on a listing with a $150 minimum price will push $50 to Airbnb/Vrbo. The agent could inadvertently set prices far below profitability.
+**What goes wrong:**
+The PriceLabs plugin is loaded via `plugins.load.paths` and `plugins.entries.pricelabs` at the global config level. The plugin registers 28 tools into the Gateway-wide tool registry. However, the new agent might not receive these tools because of agent-level tool policy filtering.
 
-**Why it happens:** The API treats DSOs as explicit operator intent. There is no server-side guard that rejects a DSO price below the listing's configured minimum. The `price_type: "percent"` range of -75 to 500 means an agent could apply a -75% adjustment to a $200 base, yielding a $50 nightly rate.
+**Why it happens:**
+Plugin tools pass through `resolvePluginTools()` into the combined tool list. But then `applyToolPolicyPipeline()` applies each filter layer sequentially. If the new agent has `agents.list[].tools.allow` set to a restricted list (for example, copying the "family bot" pattern from the docs with only `["read", "exec", "sessions_*"]`), the plugin tools are filtered out.
 
-**Consequences:** Live listing prices on Airbnb/Vrbo change immediately on next sync. Guests book at the erroneous rate. The host is contractually bound to honor the booking. Revenue loss is instantaneous and irreversible once a guest confirms.
+The subtlety: even if you do NOT set an explicit `tools.allow` on the agent, sandbox mode `"all"` applies `DEFAULT_TOOL_ALLOW` which is hardcoded to 13 core tools. Plugin tools are not core tools.
 
-**Prevention:**
-1. Build a pre-write validation layer in the MCP server that fetches the listing's current `min` price before every DSO write.
-2. Reject any DSO where the effective price (calculated from base and percentage, or the fixed value) falls below the listing's minimum price.
-3. For percentage DSOs, compute the effective price: `base_price * (1 + percent/100)` and validate against min price.
-4. Require human approval for ALL DSO writes -- never auto-execute.
-5. Display the computed effective nightly rate in the approval prompt, not just the percentage.
+**How to avoid:**
+1. The PriceLabs agent MUST have `pricelabs_*` in its tool allow list (either via `agents.list[].tools.sandbox.tools.allow` or `agents.list[].tools.allow`).
+2. Do NOT use the "read-only agent" or "communication-only agent" patterns from the docs as starting templates. Those explicitly deny tools the PriceLabs agent needs.
+3. The minimum tool set for the PriceLabs agent is: `["exec", "process", "read", "write", "edit", "apply_patch", "image", "sessions_list", "sessions_history", "sessions_send", "sessions_spawn", "subagents", "session_status", "pricelabs_*"]`.
 
-**Detection:** Compare every proposed DSO price against `min` from GET /v1/listings/{id}. Alert if effective price < min price. Log all DSO writes with before/after snapshots.
+**Warning signs:**
+- `openclaw agents list --bindings` shows the agent but tool count is lower than expected.
+- Agent says "I don't have any tools available for pricing data" when asked about portfolio.
 
-**Phase:** Must be addressed in Phase 1 (MCP server foundation). The validation layer is a prerequisite for any write operation.
-
-**Confidence:** HIGH -- sourced from PriceLabs API docs and project research (`research/02-api-reference.md` lines 206-209).
-
----
-
-### Pitfall 2: Erroneous DSO Dates Silently Omitted
-
-**What goes wrong:** When posting DSOs, dates that PriceLabs considers invalid (past dates, dates outside the sync window, malformed formats) are silently dropped from the response. The API returns 200 OK with only the valid dates, giving no error or warning about omitted dates. The agent believes all overrides were applied when some were not.
-
-**Why it happens:** The PriceLabs API design favors partial success over strict validation. This is likely to support bulk operations where some dates might already be booked.
-
-**Consequences:** The agent reports success to the user ("I've set overrides for March 15-22"), but only 5 of 8 dates were actually written. The user assumes their pricing strategy is in place for all dates. Revenue is unprotected on the silently dropped dates, and the pricing gap is invisible.
-
-**Prevention:**
-1. After every DSO POST, immediately GET the overrides for the same listing and date range.
-2. Perform a reconciliation: compare requested dates against confirmed dates.
-3. Report any discrepancies to the user explicitly: "7 of 8 dates confirmed. March 18 was not applied -- it may already be booked or outside the sync window."
-4. Never report DSO writes as successful without post-write verification.
-
-**Detection:** Implement a `verify_overrides()` function in the MCP server that runs after every DSO write. Count requested vs confirmed dates. Flag mismatches.
-
-**Phase:** Must be addressed in Phase 1 (MCP server foundation). This is a fundamental API behavior that affects all override operations.
-
-**Confidence:** HIGH -- documented in PriceLabs API reference: "Erroneous dates are silently omitted from response" (`research/02-api-reference.md` line 208).
+**Phase to address:**
+Phase 1 (Agent Creation). Must validate tool visibility as the first functional test.
 
 ---
 
-### Pitfall 3: Currency Mismatch in Fixed DSOs Silently Fails
+### Pitfall 3: New Telegram Bot Token Breaks Existing Main Agent Telegram
 
-**What goes wrong:** When creating a DSO with `price_type: "fixed"`, the `currency` field must exactly match the PMS listing's currency. If a listing is priced in EUR and the agent sends a DSO with currency "USD" (or omits it), the override silently fails or applies the numeric value in the wrong currency context. There is no error returned.
+**What goes wrong:**
+You create a second Telegram bot (via BotFather) for the PriceLabs agent and add it under `channels.telegram.accounts`. But the existing main agent's Telegram bot token is currently at the top-level `channels.telegram.botToken`, not under an `accounts` structure. Moving to multi-account requires restructuring the entire Telegram channel config. If done incorrectly, the main agent loses its Telegram connection.
 
-**Why it happens:** PriceLabs imports currency from the connected PMS/Airbnb listing and does not allow currency changes. The API does not validate currency mismatches with an explicit error.
+**Why it happens:**
+OpenClaw's single-bot Telegram config uses:
+```json
+"telegram": { "botToken": "...", "dmPolicy": "pairing" }
+```
 
-**Consequences:** A $200 override on a EUR listing could either fail silently (no price change) or apply 200 as EUR when USD was intended. Both outcomes are wrong and invisible to the agent.
+Multi-bot Telegram config uses:
+```json
+"telegram": { "accounts": { "default": { "botToken": "..." }, "pricelabs": { "botToken": "..." } } }
+```
 
-**Prevention:**
-1. Always fetch the listing's currency from GET /v1/listings/{id} before writing fixed-price DSOs.
-2. Store listing currencies in a local cache (refreshed daily) to avoid redundant API calls.
-3. The MCP server must enforce currency matching as a hard validation rule before any fixed-price DSO write.
-4. When the user requests a price in one currency and the listing is in another, convert and show the user the effective rate in their listing's currency before seeking approval.
+These are different config shapes. The docs say: "Tokens live in `channels.telegram.accounts.<id>.botToken` (default account can use `TELEGRAM_BOT_TOKEN`)." The migration from flat to accounts structure is not automatically handled. If you add `accounts` but leave the old top-level `botToken`, the behavior is undefined -- OpenClaw may use the top-level token as the default account, or it may conflict.
 
-**Detection:** Include currency field in all DSO write logs. Cross-reference against listing currency on every write. Alert on mismatch before the API call is made.
+**How to avoid:**
+1. Migrate the existing Telegram config to the multi-account structure FIRST, keeping the existing bot token under `accounts.default`.
+2. Verify the main agent still receives Telegram messages after the restructure (before adding the PriceLabs bot).
+3. Only then add the PriceLabs bot token under `accounts.pricelabs`.
+4. Add bindings: `{ "agentId": "main", "match": { "channel": "telegram", "accountId": "default" } }` and `{ "agentId": "pricelabs", "match": { "channel": "telegram", "accountId": "pricelabs" } }`.
+5. Run `openclaw channels status --probe` after each change to verify both bots connect.
 
-**Phase:** Phase 1 (MCP server foundation). Currency validation is part of the same pre-write validation layer as Pitfall 1.
+**Warning signs:**
+- `openclaw channels status --probe` shows Telegram disconnected after config change.
+- Main agent stops responding to Telegram messages.
+- Gateway log shows "telegram: auth error" or "botToken not found for account".
 
-**Confidence:** HIGH -- referenced in PriceLabs API docs: "When price_type is fixed, currency must match PMS currency exactly" (`research/02-api-reference.md` line 207). Currency import issues confirmed via MotoPress forum and PriceLabs help docs.
-
----
-
-### Pitfall 4: API Rate Limit Exhaustion With Multi-Listing Portfolios
-
-**What goes wrong:** PriceLabs allows 1000 requests/hour. A portfolio health check for 50 listings requires at minimum: 50 (listing details) + 50 (listing prices) + 50 (neighborhood data) + 50 (overrides) = 200 requests. Add reservation data and you are at 250+. Two users running the agent simultaneously, or a daily workflow plus an ad-hoc query, can exhaust the limit. At 429 status, ALL operations fail including time-sensitive price updates.
-
-**Why it happens:** AI agents make API calls far faster than human users clicking through a dashboard. A single natural language question like "How is my portfolio doing?" can trigger 100+ API calls within seconds. Traditional rate limiting assumes human-paced interaction.
-
-**Consequences:** 429 errors block all API access for the remainder of the hour. Scheduled price syncs fail. Time-sensitive DSO writes for events are delayed. The user perceives the agent as broken.
-
-**Prevention:**
-1. Implement a request budget system in the MCP server: allocate requests per workflow type (e.g., portfolio scan: max 300/run, ad-hoc query: max 50/query, DSO write: reserved 100/hour).
-2. Use a token bucket algorithm with 1000 tokens/hour, refilling at ~16.67 tokens/minute.
-3. Batch operations: fetch all listings in one call (1 request) instead of per-listing calls.
-4. Cache aggressively: listing metadata changes infrequently (cache 1 hour), neighborhood data changes daily (cache 6 hours), prices change on sync (cache until next sync cycle).
-5. Implement exponential backoff on 429 responses: wait 60s, 120s, 240s.
-6. Track remaining budget and warn the user: "Budget: 340/1000 requests remaining this hour. Full portfolio scan requires ~250 requests. Proceed?"
-
-**Detection:** Log every API call with timestamp. Dashboard showing requests/hour with 80% threshold alert. Expose remaining budget to the agent's decision-making context.
-
-**Phase:** Phase 1 (MCP server foundation). Rate limiting must be baked into the request layer from day one, not bolted on later.
-
-**Confidence:** HIGH -- rate limit of 1000/hour confirmed in PriceLabs API docs. AI agent rate limit exhaustion patterns documented extensively in industry (Medium, Fast.io, OpenAI docs).
+**Phase to address:**
+Phase 2 (Channel Routing). Must be a careful, sequential migration with rollback plan.
 
 ---
 
-### Pitfall 5: OpenClaw API Key Exposure via Skills and Logs
+### Pitfall 4: Binding Precedence Causes Cross-Talk Between Agents
 
-**What goes wrong:** When the PriceLabs API key is passed to an OpenClaw skill, it enters the LLM's context window and can be logged in chat histories, exposed in skill outputs, or leaked through malicious skills. Snyk research found 283 skills (7.1% of ClawHub's registry) contained credential leaks. Some skills explicitly instruct agents to store credentials in MEMORY.md files as plaintext.
+**What goes wrong:**
+Messages intended for the PriceLabs agent are routed to the main agent (or vice versa) because bindings are ordered incorrectly or use insufficient match specificity. The main agent receives a "How is my portfolio doing?" message, cannot find PriceLabs tools, and responds generically.
 
-**Why it happens:** OpenClaw skills are markdown instructions processed by an LLM. Any credential mentioned in the instruction flow passes through the model's context. The openclaw.json config stores MCP server environment variables including API keys. If a malicious or poorly-written skill accesses the filesystem, it can read these credentials.
+**Why it happens:**
+OpenClaw bindings are evaluated in **most-specific-first** order per the documented precedence:
+1. `peer` match (exact DM/group/channel id)
+2. `parentPeer` match
+3. `guildId + roles`
+4. `guildId`
+5. `teamId`
+6. `accountId` match
+7. channel-level match (`accountId: "*"`)
+8. fallback to default agent
 
-**Consequences:** PriceLabs API key theft allows an attacker to read all portfolio data (listing details, revenue, reservations) and write arbitrary price changes to live listings. With the key, an attacker can set $1 nightly rates across an entire portfolio.
+"If multiple bindings match in the same tier, the first one in config order wins." This means if you have:
+```json
+[
+  { "agentId": "main", "match": { "channel": "telegram" } },
+  { "agentId": "pricelabs", "match": { "channel": "telegram", "accountId": "pricelabs" } }
+]
+```
+The first binding wins for ALL Telegram messages because it is a channel-level catch-all evaluated first in config order, even though the second binding is more specific. The specificity tiers determine which fields are evaluated, but within the same tier evaluation proceeds in config order.
 
-**Prevention:**
-1. Never pass the PriceLabs API key through skill instructions. Keep it exclusively in the MCP server's environment variables.
-2. Configure the MCP server to handle all API authentication internally -- skills request actions, the MCP server authenticates.
-3. Use OpenClaw's credential isolation: `~/.openclaw/agents/<agentId>/agent/auth-profiles.json` for per-agent credentials.
-4. Set filesystem permissions: `chmod 600 ~/.openclaw/openclaw.json` and `chmod 700 ~/.openclaw/`.
-5. Enable log redaction: `logging.redactSensitive: "tools"` and add `redactPatterns: ["api[_-]?key", "X-API-Key", "pricelabs"]`.
-6. Run `openclaw security audit --deep` regularly to detect credential exposure.
-7. Install only verified skills. Audit any custom skills for credential handling patterns.
-8. Run `mcp-scan` to audit installed skills for credential leak patterns (per Snyk recommendation).
+Actually, re-reading the docs: "Bindings are deterministic and most-specific wins" with the numbered precedence. An `accountId` match (tier 6) is more specific than a channel-level match (tier 7). So the `accountId: "pricelabs"` binding SHOULD win. But the danger is when both bots receive a DM from the same user -- the `peer` tier may collapse to the same session key.
 
-**Detection:** Regular `openclaw security audit` runs. Monitor logs for API key patterns. Set up alerts for unexpected API usage patterns (requests from unfamiliar IPs if PriceLabs provides such logging).
+The real cross-talk risk: if the user DMs both bots from the same Telegram account, and bindings match on `accountId`, this should route correctly. But if a binding is missing `accountId` (bare channel match), it catches everything.
 
-**Phase:** Phase 1 (infrastructure setup). Security architecture must be established before any credentials are configured.
+**How to avoid:**
+1. Every binding MUST specify `accountId` explicitly. Never use bare channel matches in multi-agent setups.
+2. For Slack, use `peer` match with the specific channel ID: `{ "agentId": "pricelabs", "match": { "channel": "slack", "peer": { "kind": "channel", "id": "C0PRICELABS" } } }`.
+3. Put more-specific bindings BEFORE less-specific ones in the config array.
+4. After configuring bindings, run `openclaw agents list --bindings` and verify every route.
+5. Test by sending a message to each channel/bot and checking which agent responds in the gateway log.
 
-**Confidence:** HIGH -- Snyk research (Feb 2026) documented 283 leaky skills. OpenClaw official security docs confirm credential management patterns. CVE-2026-25253 demonstrates real exploitation paths.
+**Warning signs:**
+- Messages sent to the PriceLabs Telegram bot are answered by the main agent (or vice versa).
+- Gateway log shows `routing message to agent:main` when it should show `agent:pricelabs`.
+- `openclaw agents list --bindings` shows overlapping or ambiguous routes.
+
+**Phase to address:**
+Phase 2 (Channel Routing). Must be verified with a routing test matrix.
 
 ---
 
-### Pitfall 6: MCP Server Runs With Full System Access
+### Pitfall 5: Cron Jobs Target Wrong Agent (Missing or Stale `agentId`)
 
-**What goes wrong:** By default, OpenClaw MCP servers execute with the same permissions as the OpenClaw process. A PriceLabs MCP server that handles API calls also has access to the filesystem, network, and any other resources available to the process owner. A prompt injection attack or malicious skill could instruct the MCP server to perform unintended operations.
+**What goes wrong:**
+Permanent cron jobs for daily health summaries and weekly optimization reports run under the `main` agent instead of the `pricelabs` agent. The main agent does not have PriceLabs domain context (different workspace, different skills) and produces generic or empty reports. Alternatively, existing main-agent cron jobs accidentally get `agentId` reassigned.
 
-**Why it happens:** MCP protocol does not inherently sandbox server processes. OpenClaw's "lethal trifecta" (identified by Simon Willison): access to private data + exposure to untrusted content + ability to communicate externally = vulnerable by design.
+**Why it happens:**
+OpenClaw cron jobs have an optional `agentId` field. Per the docs: "If missing or unknown, the gateway falls back to the default agent." The current `jobs.json` shows 5 existing cron jobs, some with `"agentId": "main"` and some without. New cron jobs created via `openclaw cron add` default to the caller's agent context. If you create the PriceLabs cron jobs from the main agent's session, they may default to `agentId: "main"`.
 
-**Consequences:** A compromised or manipulated MCP server could exfiltrate credentials, modify system files, make unauthorized network requests, or pivot to other services running on the same host.
+The `--agent` flag exists: `openclaw cron add --agent pricelabs`, but forgetting it is easy and the failure mode is silent -- the job runs, just under the wrong agent.
 
-**Prevention:**
-1. Run OpenClaw in Docker with sandbox mode enabled:
-   ```json
-   {
-     "agents": {
-       "defaults": {
-         "sandbox": {
-           "mode": "docker",
-           "scope": "agent",
-           "workspaceAccess": "none"
-         }
-       }
-     }
-   }
+Additionally, the known OpenClaw cron skip bug #17852 may cause scheduled jobs to silently skip execution. If the first runs of new permanent jobs are skipped, you may not notice the problem for days.
+
+**How to avoid:**
+1. Always use `--agent pricelabs` when creating PriceLabs cron jobs.
+2. After creation, run `openclaw cron list` and verify `agentId` is `"pricelabs"` for each PriceLabs job.
+3. For the v1.2 delivery targets, use explicit `--channel` and `--to` flags:
+   - Telegram: `--channel telegram --to "<pricelabs-bot-chatId>"` (explicit chatId required -- Telegram does not auto-resolve like Slack).
+   - Slack: `--channel slack --to "channel:C0PRICELABS"` (must use `channel:` prefix for channel targets).
+4. Run each cron job manually once with `openclaw cron run <jobId>` and verify the correct agent handles it.
+5. Monitor cron runs for the first week: `openclaw cron runs --id <jobId> --limit 10`.
+
+**Warning signs:**
+- `openclaw cron list` shows PriceLabs jobs with `agentId: "main"` or no `agentId`.
+- Cron run output contains generic responses instead of PriceLabs-specific content.
+- `cron delivery target is missing` error (already seen in current `jobs.json` for the Weekly Security Check job).
+- Multiple consecutive `lastStatus: "error"` entries (cron skip bug #17852).
+
+**Phase to address:**
+Phase 3 (Cron Jobs). Must be validated individually for each permanent job.
+
+---
+
+### Pitfall 6: Workspace Brain Files Ignored by the LLM
+
+**What goes wrong:**
+You create AGENTS.md, SOUL.md, IDENTITY.md, USER.md, TOOLS.md, and MEMORY.md in the PriceLabs agent's workspace. But the agent does not follow the instructions in these files -- it ignores domain-specific rules, uses the wrong tone, or does not reference PriceLabs-specific protocols.
+
+**Why it happens:**
+Multiple causes documented in the OpenClaw workspace docs:
+
+1. **Workspace path misconfiguration:** The `agents.list[].workspace` path does not match the actual directory where files were created. OpenClaw injects "missing file" markers and continues.
+
+2. **Token budget exhaustion:** Bootstrap files are injected into the context window on every turn. The current main workspace has a 17KB AGENTS.md. If the PriceLabs agent's workspace files are similarly large, combined with skill instructions and the PriceLabs tool schemas (28 tools), the context window fills quickly. `agents.defaults.bootstrapMaxChars` defaults to 20,000 per file. `agents.defaults.bootstrapTotalMaxChars` defaults to 150,000 total. But with 28 tool schemas, the effective available space is much less.
+
+3. **Compaction wipes context:** If the session reaches its context limit, compaction kicks in. After compaction, only the summary survives -- the full workspace file instructions may be reduced to a few sentences. The `compaction.mode: "safeguard"` setting in the current config preserves more, but domain-specific nuances in AGENTS.md can still be lost.
+
+4. **Skills conflict:** If PriceLabs skills in `<workspace>/skills/` conflict with managed skills in `~/.openclaw/skills/`, workspace skills win by precedence. But if the workspace `skills/` directory is empty or misconfigured, the agent falls back to shared skills that know nothing about PriceLabs.
+
+**How to avoid:**
+1. Keep workspace files concise. AGENTS.md should be under 5,000 characters for a domain-specific agent. Do not copy the main agent's 17KB AGENTS.md.
+2. Use `openclaw agents list` to verify the workspace path resolves correctly.
+3. After creating the workspace, send the agent a test message and check that it references workspace file content (e.g., "what are your instructions?" should echo AGENTS.md content).
+4. Copy PriceLabs skills (currently in `~/.openclaw/workspace/pricelabs-skills/`) to the new agent's `<workspace>/skills/` directory.
+5. Use `/context list` or `/context detail` to inspect how much context budget each file consumes.
+6. Set `agents.list[].contextTokens` appropriately (default: 131072). With 28 tool schemas, allow at least 30,000 tokens for tools alone.
+
+**Warning signs:**
+- Agent responds with generic personality instead of PriceLabs domain tone.
+- Agent says "I don't see any special instructions" when asked about its role.
+- `/context list` shows "missing file" markers for workspace files.
+- Gateway log shows workspace path resolution errors.
+
+**Phase to address:**
+Phase 1 (Agent Creation). Workspace setup is the foundation for agent identity.
+
+---
+
+### Pitfall 7: Auth Profiles Not Copied to New Agent Directory
+
+**What goes wrong:**
+The PriceLabs agent is created but cannot make LLM calls because it has no auth profiles. The agent's first turn fails with an authentication error. The gateway falls back to the default agent or returns an error.
+
+**Why it happens:**
+Per the multi-agent docs: "Auth profiles are per-agent. Each agent reads from its own `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`. Main agent credentials are NOT shared automatically. Never reuse `agentDir` across agents (it causes auth/session collisions). If you want to share creds, copy `auth-profiles.json` into the other agent's `agentDir`."
+
+The current config uses `openai-codex:default` with OAuth mode. The PriceLabs agent needs the same OAuth credentials to call the LLM. These must be explicitly copied.
+
+**How to avoid:**
+1. After creating the agent with `openclaw agents add pricelabs`, immediately copy auth profiles:
+   ```bash
+   cp ~/.openclaw/agents/main/agent/auth-profiles.json ~/.openclaw/agents/pricelabs/agent/auth-profiles.json
    ```
-2. Use tool allowlists to restrict the PriceLabs agent to only the tools it needs:
-   ```json
-   {
-     "tools": {
-       "profile": "messaging",
-       "allow": ["read", "mcp_pricelabs"],
-       "deny": ["exec", "write", "browser", "cron", "gateway"]
-     }
-   }
-   ```
-3. Bind the gateway to loopback only: `gateway.bind: "loopback"`.
-4. Enable gateway authentication: `gateway.auth.mode: "token"`.
-5. Deny shell execution: `tools.exec.security: "deny"`.
-6. Disable elevated mode: `tools.elevated.enabled: false`.
+2. Alternatively, run `openclaw models auth login` in the pricelabs agent context.
+3. Verify auth works before any other testing: send a simple "hello" message and confirm a response.
 
-**Detection:** Run `openclaw security audit --deep` after every configuration change. Monitor Docker container resource usage for anomalies. Check tool invocation logs for unexpected tool calls.
+**Warning signs:**
+- Agent fails on first message with "no auth profile found" or model authentication errors.
+- Gateway log shows auth resolution failure for `agent:pricelabs`.
 
-**Phase:** Phase 1 (infrastructure setup). Container isolation and tool restriction must be the first configuration step.
-
-**Confidence:** HIGH -- OpenClaw official security documentation provides these exact configurations. Multiple security vendors (Cisco, CrowdStrike, Trend Micro, Kaspersky) have published analyses of these attack vectors in Jan-Feb 2026.
+**Phase to address:**
+Phase 1 (Agent Creation). Must be done immediately after agent directory creation.
 
 ---
 
-### Pitfall 7: No Undo for API Write Operations
-
-**What goes wrong:** PriceLabs API write operations (POST /v1/listings for base/min/max price changes, POST overrides for DSOs) take effect on the next sync cycle and propagate to live OTA listings. There is no "undo" endpoint, no transaction rollback, no versioning of previous values. Once a price change syncs to Airbnb/Vrbo, reversing it requires another API call and another sync cycle (which runs nightly 6pm-6am Chicago time).
-
-**Why it happens:** PriceLabs is designed for human operators who review changes in the dashboard before syncing. The API was added for programmatic access but inherits the same one-way write model.
-
-**Consequences:** An agent error that sets wrong prices could be live for up to 12 hours before the next sync corrects it. During peak booking periods, even a few hours of wrong pricing can result in multiple bookings at incorrect rates.
-
-**Prevention:**
-1. Implement a local state store that snapshots the current values before every write operation.
-2. Store: `{listing_id, field, old_value, new_value, timestamp, approval_id}` for every change.
-3. Build a "rollback" capability that reads the snapshot and writes the old values back.
-4. Implement a mandatory confirmation delay: after user approval, wait 5 minutes before executing, with a cancel option. This provides a buffer against accidental approvals.
-5. For DSOs, always store the full set of existing overrides before modification so they can be restored.
-6. Consider triggering `POST /v1/push_prices` immediately after critical corrections rather than waiting for the nightly sync.
-
-**Detection:** Maintain an audit log of all write operations. Provide a "recent changes" command that shows all modifications in the last 24 hours with rollback options.
-
-**Phase:** Phase 2 (core agent logic). The snapshot/rollback system should be built alongside the first write operations.
-
-**Confidence:** HIGH -- confirmed from API docs that there is no undo endpoint. Sync timing from algorithm docs (`research/05-algorithm-and-settings.md` line 29).
-
----
-
-## Moderate Pitfalls
-
-Mistakes that degrade agent quality, user trust, or require significant rework.
-
----
-
-### Pitfall 8: Agent Recommends Base Price Changes Too Frequently
-
-**What goes wrong:** The agent detects a slow week and recommends lowering the base price. The host approves. Next week picks up, agent recommends raising it. This "base price yo-yo" creates noise, confuses the algorithm, and trains the host to distrust the agent.
-
-**Why it happens:** The PriceLabs algorithm already handles short-term demand fluctuations through its customizations (last-minute discounts, occupancy-based adjustments). Base price is meant to be a stable anchor adjusted monthly at most. An AI agent analyzing daily data will see patterns that feel actionable but should be left to the algorithm.
-
-**Consequences:** Frequent base price changes undermine the algorithm's effectiveness. The host loses confidence in the agent. Revenue actually decreases because the algorithm cannot establish stable baseline patterns.
-
-**Prevention:**
-1. Enforce a minimum 30-day interval between base price change recommendations.
-2. Require consistent under/overperformance over 30+ days before suggesting a change (per PriceLabs best practice).
-3. Compare against `recommended_base_price` from the API -- only recommend changes when the delta exceeds 10%.
-4. Frame recommendations using neighborhood data percentiles, not short-term occupancy swings.
-5. Hard-code this rule: "Never recommend base price changes in response to a single slow week."
-
-**Detection:** Track base price change frequency per listing. Alert if agent recommends more than one base price change per listing per month.
-
-**Phase:** Phase 3 (optimization intelligence). This is a logic design decision for the recommendation engine.
-
-**Confidence:** HIGH -- PriceLabs optimization playbook and community consensus: "Only adjust when consistently under/overperforming over 30+ days" (`research/03-optimization-playbook.md` lines 55-58).
-
----
-
-### Pitfall 9: Panic Pricing Recommendations (Race to the Bottom)
-
-**What goes wrong:** Agent sees low occupancy 30-60 days out and recommends aggressive discounting. Host approves multiple price drops. Competitors see lower prices and drop theirs. The market enters a downward spiral. The host fills dates at rates below profitability.
-
-**Why it happens:** Occupancy-based reasoning without context. The agent compares your occupancy to market average but does not factor in booking lead time patterns for your market. A beach house 45 days out may look "underbooked" but is normal for that market type.
-
-**Consequences:** Revenue per booking drops below cleaning + operating costs. Adjacent dates are devalued. The host's listing becomes associated with low rates, attracting less desirable guests and reducing review quality.
-
-**Prevention:**
-1. Always contextualize occupancy against market benchmarks AND same-time-last-year (STLY) data.
-2. Implement market-type-aware lead time expectations: urban (7-14 days), beach (30-45 days), luxury (60-90 days).
-3. Use occupancy-based adjustments (already built into PriceLabs) for gradual changes instead of recommending manual price cuts.
-4. Set a hard floor: never recommend a nightly rate below the listing's `min` price, and never recommend lowering `min` price by more than 10% in a single change.
-5. Show the user what last year's bookings looked like at this time before recommending cuts.
-
-**Detection:** Track the direction and magnitude of all price recommendations. Alert if the agent has recommended more than 3 price decreases in a row for the same listing without an intervening increase.
-
-**Phase:** Phase 3 (optimization intelligence). This is core recommendation logic.
-
-**Confidence:** HIGH -- documented as the most common STR pricing mistake across PriceLabs blog, community forums, and industry sources.
-
----
-
-### Pitfall 10: Orphan Day Creation Through DSO Min-Stay Settings
-
-**What goes wrong:** The agent sets a DSO with a `min_stay` of 3 on a date that has bookings on either side, creating a 2-night gap that cannot be filled because of the 3-night minimum. The DSO's min-stay overrides PriceLabs' orphan day management, which normally would have reduced the min-stay to fill the gap.
-
-**Why it happens:** DSOs override ALL other settings including orphan day rules. PriceLabs' documentation explicitly states: "Orphan Min-Stay settings do not reduce the minimum stay when a Date-Specific Override is in place." The agent does not check surrounding booking context before setting min-stay.
-
-**Consequences:** Revenue-producing dates become unbookable. The orphan gap widens. This is invisible until the dates pass unbooked.
-
-**Prevention:**
-1. Before setting any DSO min-stay, check the surrounding 7-day booking context using GET /v1/listing_prices (check `booking_status` for adjacent dates).
-2. Never set DSO min-stay that would create an unfillable gap between existing bookings.
-3. Implement gap detection: if a DSO min-stay would leave fewer available nights than the min-stay value between two booked periods, reject or warn.
-4. Prefer letting PriceLabs' built-in orphan management handle min-stay adjustments rather than setting explicit DSO min-stays.
-
-**Detection:** After every DSO write with min-stay, scan the surrounding calendar for newly created orphan gaps. Alert the user if gaps are detected.
-
-**Phase:** Phase 3 (optimization intelligence). Requires calendar-aware logic built on top of the MCP read operations.
-
-**Confidence:** HIGH -- confirmed in PriceLabs help docs and algorithm settings reference (`research/05-algorithm-and-settings.md` lines 58-63).
-
----
-
-### Pitfall 11: Dual Pricing Conflicts With PMS Dynamic Pricing
-
-**What goes wrong:** The host uses Hostaway, OwnerRez, or Guesty as their PMS. These systems have their own dynamic pricing rules, gap rules, or min-stay rules. When both PriceLabs and the PMS are pushing prices, they conflict. Prices oscillate between two systems, creating unpredictable rates for guests.
-
-**Why it happens:** The agent does not know (and cannot query via the PriceLabs API) whether the host's PMS has its own pricing rules enabled. PriceLabs pushes prices to the PMS, but if the PMS overrides them with its own rules, the final guest-facing price differs from what PriceLabs intended.
-
-**Consequences:** Prices on OTAs do not match what PriceLabs shows. Host sees different prices in PriceLabs dashboard vs. Airbnb. Trust in both systems erodes. Revenue optimization fails because neither system has full control.
-
-**Prevention:**
-1. During onboarding, explicitly ask the user which PMS they use and warn about known conflicts.
-2. Maintain a known-conflicts database:
-   - Hostaway: must disable Hostaway Dynamic Pricing before using PriceLabs.
-   - OwnerRez: gap rules must be configured in one system only, not both.
-   - Guesty: API key expires after 4 hours during setup.
-3. Include a PMS conflict check in the portfolio health workflow.
-4. If the agent detects price mismatches between PriceLabs prices and actual booking prices (from reservation data), flag a possible PMS conflict.
-
-**Detection:** Compare `user_price` from listing_prices endpoint against `rental_revenue / no_of_days` from reservation_data. Consistent discrepancies indicate PMS interference.
-
-**Phase:** Phase 2 (core agent logic). PMS awareness should be part of the onboarding flow.
-
-**Confidence:** HIGH -- documented conflicts with specific PMS providers in `research/07-common-mistakes.md` lines 50-64.
-
----
-
-### Pitfall 12: Human-in-the-Loop Approval Fatigue
-
-**What goes wrong:** The agent surfaces 15 recommendations daily across a 50-listing portfolio. The host starts rubber-stamping approvals without reading them. Alternatively, the host stops responding entirely and the agent's recommendations pile up unapproved, becoming stale.
-
-**Why it happens:** The project mandates human approval for ALL pricing changes (correct for safety). But if the approval interface generates too many low-value prompts, users either approve everything blindly (defeating the purpose) or disengage entirely.
-
-**Consequences:** Blind approval negates the safety benefit -- might as well be autonomous. Disengagement means no pricing optimization happens at all.
-
-**Prevention:**
-1. Batch recommendations: instead of 15 individual prompts, send one daily digest with all recommendations grouped by priority (critical / recommended / optional).
-2. Implement tiered approval: low-risk changes (DSOs within 10% of algorithm suggestion) could be auto-approved with notification. High-risk changes (base price, large DSOs, min price) always require explicit approval.
-3. Set approval expiry: recommendations older than 48 hours expire and are recalculated. Do not let stale recommendations accumulate.
-4. Track approval patterns: if a user approves 100% of recommendations for 30 days, suggest enabling auto-approval for low-risk categories.
-5. Provide one-tap "approve all recommended" for the daily digest with individual override capability.
-
-**Detection:** Track approval rate, response time, and staleness. Alert if average response time exceeds 24 hours or if approval rate is consistently 100% (likely rubber-stamping).
-
-**Phase:** Phase 3 (messaging and UX). Approval workflow design is a UX problem, not just a safety mechanism.
-
-**Confidence:** MEDIUM -- pattern well-documented in HITL literature (Permit.io, Vellum, enterprise AI guides). Specific application to this project requires validation with real user behavior.
-
----
-
-### Pitfall 13: Stale Cache Causing Incorrect Recommendations
-
-**What goes wrong:** The agent caches listing data and neighborhood data to stay within rate limits. A host makes manual changes in the PriceLabs dashboard (adjusts base price, adds DSOs, changes settings). The agent's cache does not reflect these changes and makes recommendations based on outdated state.
-
-**Why it happens:** PriceLabs has no webhook or push notification system for the Customer API. The only way to detect changes is to poll endpoints. Aggressive caching (necessary for rate limiting) creates a staleness window.
-
-**Consequences:** Agent recommends a base price increase when the host already increased it 2 hours ago. Agent sets a DSO on a date that the host already manually overrode. Duplicate or conflicting changes erode trust.
-
-**Prevention:**
-1. Cache with awareness: before any write operation, always fetch fresh data for the specific listing being modified (1 API call, worth the budget).
-2. Use `last_refreshed_at` and `last_date_pushed` timestamps to detect changes since last cache refresh.
-3. Implement a daily full cache refresh during off-peak hours (early morning, when the 1000/hour budget is least constrained).
-4. When displaying cached data, show the cache age: "Data as of 3 hours ago. Refresh?"
-5. Before presenting recommendations, compare cached values with a fresh single-listing fetch to detect drift.
-
-**Detection:** Log cache hit/miss rates. Track recommendations that were presented to users but based on data more than 6 hours old. Compare cached vs fresh data periodically and report drift percentage.
-
-**Phase:** Phase 2 (core agent logic). Cache strategy is part of the data layer design.
-
-**Confidence:** MEDIUM -- no webhook support confirmed from API docs (no webhook endpoints in Customer API). Cache invalidation strategy is inference-based.
-
----
-
-## Minor Pitfalls
-
-Issues that cause friction but are straightforward to fix.
-
----
-
-### Pitfall 14: Wrong Airbnb Fee Calculation in Revenue Projections
-
-**What goes wrong:** The agent calculates projected revenue by adding 15.5% to cover Airbnb's host fee, but the math is wrong. The fee is calculated on the marked-up price, not the original price, so the required markup is actually lower (approximately 13.4% to net 15.5%).
-
-**Prevention:** Use the actual Airbnb fee formula: `net = gross * (1 - fee_rate)` and `required_gross = target_net / (1 - fee_rate)`. Never use simple percentage addition. Fetch actual fee rates from reservation data where available.
-
-**Phase:** Phase 3 (optimization intelligence).
-
-**Confidence:** HIGH -- documented in `research/07-common-mistakes.md` lines 33-35.
-
----
-
-### Pitfall 15: Inconsistent Pricing in Weekly-Stay Markets
-
-**What goes wrong:** In beach/resort markets, guests expect consistent weekly rates (e.g., $250/night all week). PriceLabs sets different prices each day ($230 Mon, $260 Wed, $280 Fri). This confuses guests and may reduce bookings in markets where weekly consistency is expected.
-
-**Prevention:** Detect market type during onboarding. For weekly-stay markets, recommend seasonal profiles with stable pricing rather than daily dynamic adjustments. Use DSOs for consistent weekly blocks when appropriate.
-
-**Phase:** Phase 3 (optimization intelligence).
-
-**Confidence:** HIGH -- documented in `research/07-common-mistakes.md` lines 38-39.
-
----
-
-### Pitfall 16: Thin Market Data Leading to Bad Recommendations
-
-**What goes wrong:** In rural or unique markets, PriceLabs may have fewer than 50 comparable listings (against its ideal of 350). The neighborhood data becomes unreliable, and agent recommendations based on this data are misleading.
-
-**Prevention:** Check the `Listings Used` field in neighborhood data responses. If below 100, flag the data as low-confidence and tell the user: "Your market has limited comparison data (N listings). Recommendations should be cross-checked manually." Prefer STLY data over market comparisons in thin markets.
-
-**Phase:** Phase 3 (optimization intelligence).
-
-**Confidence:** MEDIUM -- thin market issues documented in user complaints (`research/07-common-mistakes.md` lines 89-91) but specific threshold of 100 is an estimate.
-
----
-
-### Pitfall 17: Sync Timing Misunderstanding
-
-**What goes wrong:** The agent writes a DSO and tells the user "Done! Your prices are updated." But PriceLabs syncs prices nightly between 6pm-6am Chicago time. The actual OTA listing will not reflect the change until the next sync cycle, which could be hours away.
-
-**Prevention:** After any write operation, include the sync timing caveat: "Override saved to PriceLabs. It will sync to Airbnb during the next cycle (nightly 6pm-6am CT). For immediate sync, I can trigger a manual push." Offer to call POST /v1/push_prices for urgent changes.
-
-**Phase:** Phase 2 (core agent logic).
-
-**Confidence:** HIGH -- sync timing documented in `research/05-algorithm-and-settings.md` lines 29-31.
-
----
-
-### Pitfall 18: OpenClaw Prompt Injection via Messaging Channels
-
-**What goes wrong:** Since the agent is accessible via Slack and Telegram, an attacker in a shared Slack channel or Telegram group could craft a message that causes the agent to perform unintended actions (read competitor data, change prices, exfiltrate information).
-
-**Prevention:**
-1. Use `requireMention: true` for all group channels.
-2. Implement per-channel allowlists via `dmPolicy: "allowlist"` or `dmPolicy: "pairing"`.
-3. Use `session.dmScope: "per-channel-peer"` to prevent cross-user context leakage.
-4. Never include pricing data or API responses in group channels -- only in DMs with verified users.
-5. Use Opus 4.6 which has stronger prompt injection resistance.
-
-**Phase:** Phase 1 (infrastructure setup). Channel security must be configured before the agent is deployed.
-
-**Confidence:** HIGH -- OpenClaw official security docs provide these exact configurations. Giskard research (Jan 2026) demonstrated prompt injection attacks on OpenClaw deployments.
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Phase 1: MCP Server Foundation | Rate limit exhaustion during development/testing | Use a separate API key for dev. Implement rate limiting from the first line of code. |
-| Phase 1: MCP Server Foundation | API key hardcoded in source or committed to git | Use .env files, add to .gitignore immediately. Never log API keys. |
-| Phase 1: Infrastructure Setup | OpenClaw running without Docker sandbox | Start with Docker isolation from day one. Do not defer security hardening. |
-| Phase 1: Infrastructure Setup | Default OpenClaw config exposes gateway to network | Set `gateway.bind: "loopback"` and enable token auth before first run. |
-| Phase 2: Core Agent Logic | Agent treats all listings identically | Listings differ by market type, size, and performance tier. Build listing-context-aware logic. |
-| Phase 2: Core Agent Logic | No state persistence between sessions | OpenClaw has no built-in state beyond session history. Design explicit state storage (file-based or database) for cache, audit logs, and approval state. |
-| Phase 3: Optimization Intelligence | Algorithm second-guessing PriceLabs | The agent should augment PriceLabs' algorithm with strategic recommendations (base price, DSOs, events), NOT override daily price calculations. |
-| Phase 3: Optimization Intelligence | Recommending changes for booked dates | Always check `booking_status` before recommending price changes. Booked dates cannot have their prices changed. |
-| Phase 3: Messaging UX | Approval message formatting differs between Slack and Telegram | Design approval messages that render correctly on both platforms. Test formatting on both before launch. |
-| Phase 4: Multi-User Scaling | Shared API key across users | Each user needs their own PriceLabs API key. Per-agent credential isolation via OpenClaw auth profiles. |
-| Phase 4: Multi-User Scaling | One user's session seeing another user's data | Enforce `session.dmScope: "per-channel-peer"` and never share listing data across sessions. |
-
----
-
-## Pre-Flight Checklist for Every Write Operation
-
-Before the agent executes ANY PriceLabs API write, this sequence must complete:
-
-1. **Fresh data fetch** -- GET current state for the specific listing (1 API call)
-2. **Validation** -- Check min/max price bounds, currency match, date validity, booking status
-3. **Impact calculation** -- Compute the effective nightly rate and show it to the user
-4. **Human approval** -- Present the change with before/after comparison; wait for explicit "yes"
-5. **Execute** -- Make the API call
-6. **Verify** -- GET the state again to confirm the change applied (especially for DSOs)
-7. **Log** -- Record old value, new value, timestamp, approval reference, verification result
-8. **Report** -- Tell the user the confirmed result with sync timing caveat
-
-Any step that fails should abort the operation and notify the user.
-
----
+## Technical Debt Patterns
+
+Shortcuts that seem reasonable but create long-term problems.
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Share `agentDir` between main and pricelabs agents | Quick setup, no auth copy needed | Auth/session collisions, corrupted state | Never -- explicitly forbidden by docs |
+| Copy entire main workspace as starting point | Fast initial content | 17KB AGENTS.md wastes tokens, irrelevant content confuses agent | Never -- write from scratch for domain agent |
+| Use `delivery.channel: "last"` for cron jobs | No need to specify targets | "Last" route is undefined for a new agent that has never responded anywhere | Only after the agent has established a conversation history |
+| Reuse main agent's Telegram bot for PriceLabs | No BotFather setup needed | No identity separation, confusing UX, binding conflicts | Never for production -- acceptable for quick local testing only |
+| Skip `openclaw sandbox explain` verification | Saves a command | Silent tool filtering goes unnoticed for days | Never -- takes 5 seconds and prevents the #1 pitfall |
+| Set `agents.list[].sandbox.mode: "off"` to avoid tool filtering | All tools available immediately | No security isolation, full host access | Only during initial development, must re-enable before production |
+
+## Integration Gotchas
+
+Common mistakes when connecting the new agent to existing infrastructure.
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Telegram cron delivery | Omitting `--to <chatId>` | Telegram requires explicit `--to` with the chatId. Unlike Slack, it does not auto-resolve from the bot token. Verify chatId by sending `/start` to the new bot and checking updates. |
+| Slack channel routing | Using bare channel name instead of ID | Slack bindings require the channel ID (`C0PRICELABS`), not the display name (`#pricelabs`). Get the ID from Slack's channel details. Use `channel:C0PRICELABS` prefix in cron delivery targets. |
+| Plugin sharing across agents | Assuming plugin config is per-agent | `plugins.entries.pricelabs` is GLOBAL. Both agents share the same plugin instance and MCP server process. You cannot have different PriceLabs configs per agent. This is fine for v1.2 (single user), but blocks multi-user in v2.0. |
+| Existing cron jobs after migration | Not updating old cron jobs' `agentId` | The 5 existing cron jobs in `jobs.json` are bound to `agentId: "main"`. If PriceLabs cron logic was ever added to any of them, they need to be migrated. In practice, none of the existing jobs are PriceLabs-related, so they stay as-is. But verify. |
+| Slack channel allowlist | Adding new channel to bindings but not to `channels.slack.channels` allowlist | The current config only allows `C0AF9MXD0ER` and `C0AG7FJNKNC`. A new `#pricelabs` channel must be added to `channels.slack.channels` with `allow: true`. Without this, Slack ignores messages from the channel entirely. |
+| OpenClaw gateway restart | Editing config without restarting | "Config changes require a gateway restart." Every `openclaw.json` change is dead until `openclaw gateway restart`. Easy to forget during iterative config changes. |
+
+## Performance Traps
+
+Patterns that work at small scale but fail as usage grows.
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Single MCP server process for all agent requests | Works fine for one user, one agent | The current plugin spawns one `node` child process for the MCP server. If both main and pricelabs agents call PriceLabs tools simultaneously (`agents.defaults.maxConcurrent: 2`), requests serialize through one stdin pipe. | 2+ concurrent agent turns using PriceLabs tools |
+| Plugin tool timeout at 60 seconds | Adequate for single calls | The MCP bridge uses `timeoutMs = 60000` for tool calls. If the MCP server is busy with a long API call from the other agent, the queue grows and later calls may timeout. | Heavy concurrent usage or slow PriceLabs API responses |
+| Isolated cron sessions accumulate | Invisible at first | Each isolated cron run creates a session. Default `cron.sessionRetention: "24h"` helps, but if the PriceLabs agent runs 2 cron jobs daily (health + optimization), that is 14 sessions/week. With the existing 5 jobs, total is 49 sessions/week before pruning. | After weeks of operation, session storage may grow if retention is increased |
+| 28 tool schemas in every context window | Works with 131K context | Each PriceLabs tool schema consumes tokens. 28 tools with JSON schemas average ~100-200 tokens each, totaling ~3,000-5,000 tokens per session turn. This is unavoidable overhead. | If context window is reduced, or if workspace files are too large |
+
+## Security Mistakes
+
+Domain-specific security issues for the multi-agent transition.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| PriceLabs API key visible to main agent | Main agent sessions could log or expose the key if instructed by prompt injection | The key is in the global `env` block of `openclaw.json` AND in `plugins.entries.pricelabs.config`. Both are readable by any agent. For v1.2 this is acceptable (single user). For v2.0, must move to per-agent credential isolation. |
+| New Telegram bot token in config file | `openclaw.json` contains both bot tokens in plaintext. Anyone with file access has both bots. | Set `chmod 600 ~/.openclaw/openclaw.json`. Consider moving tokens to environment variables: `TELEGRAM_BOT_TOKEN_PRICELABS`. |
+| PriceLabs agent with `exec` tool allowed | Agent can run arbitrary commands on the host | Evaluate whether `exec` is needed. If the agent only needs to call PriceLabs tools, deny `exec`: `agents.list[].tools.deny: ["exec"]`. If exec is needed for workspace file management, keep it but enable `tools.exec.security: "allowlist"`. |
+| Cross-agent session leakage | Main agent could theoretically access PriceLabs agent session data via `sessions_list`/`sessions_history` | Session stores are per-agent under `~/.openclaw/agents/<agentId>/sessions/`. The tools should be scoped. But if `tools.agentToAgent` is enabled, explicit cross-agent messaging becomes possible. Keep `tools.agentToAgent.enabled: false` (current default). |
+
+## UX Pitfalls
+
+Common user experience mistakes in this domain.
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| PriceLabs bot responds with main agent's personality | Confusing -- user messages the PriceLabs bot but gets generic assistant replies | Ensure SOUL.md and IDENTITY.md establish clear PriceLabs domain identity. First message should confirm: "I'm your PriceLabs revenue manager." |
+| Cron health summary delivered to wrong channel | User receives PriceLabs reports in their general Slack channel mixed with other notifications | Always use explicit `--channel` and `--to` on cron jobs. Never use `--channel last` for new agents. |
+| No response acknowledgment | User sends a portfolio question, agent takes 30 seconds to fetch data, user thinks it is broken | Set `messages.ackReactionScope: "group-mentions"` (already configured). For the PriceLabs agent, consider `streaming: "partial"` to show progress. |
+| Approval messages in PriceLabs channel mixed with reports | Health summaries and approval requests in the same channel create noise | Consider separating: health summaries go to `#pricelabs-reports`, approval requests go to DM. Or use threading in Slack (`parentPeer` binding). |
+
+## "Looks Done But Isn't" Checklist
+
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Agent created:** Verify `openclaw agents list` shows the agent with correct workspace path AND `openclaw sandbox explain --agent pricelabs` shows `pricelabs_*` in allowed tools.
+- [ ] **Telegram bot connected:** Verify `openclaw channels status --probe` shows BOTH bots connected, not just the default one.
+- [ ] **Bindings correct:** Verify `openclaw agents list --bindings` shows every route. Test by sending a message to each channel and checking the gateway log for correct agent resolution.
+- [ ] **Skills loaded:** Verify the PriceLabs agent can list its skills and they include the 4 PriceLabs skills (domain-knowledge, monitoring-protocols, analysis-playbook, optimization-playbook).
+- [ ] **Auth working:** Verify the PriceLabs agent can complete an LLM call (not just tool registration). Send "hello" and get a response.
+- [ ] **Cron jobs targeting correctly:** Verify `openclaw cron list` shows PriceLabs jobs with `agentId: "pricelabs"` AND correct delivery targets. Run each job once with `openclaw cron run <jobId>` and check output.
+- [ ] **No cross-talk:** Send a PriceLabs question to the main agent's Telegram. It should NOT trigger PriceLabs tools. Send a general question to the PriceLabs bot. It should NOT use main agent context.
+- [ ] **Workspace files injected:** Send the PriceLabs agent "what are your instructions?" and verify it references AGENTS.md content, not generic defaults.
+- [ ] **Existing main agent unaffected:** After all changes, verify the main agent still responds on all its channels with its full tool set and personality.
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Tools filtered by sandbox | LOW | Add `pricelabs_*` to `agents.list[].tools.sandbox.tools.allow`, restart gateway, re-test. Takes 2 minutes. |
+| Main agent Telegram broken by config migration | MEDIUM | Revert `channels.telegram` to the pre-migration flat structure (keep a backup of `openclaw.json` before any changes). Restart gateway. Then retry the migration more carefully. |
+| Cron jobs running under wrong agent | LOW | `openclaw cron edit <jobId> --agent pricelabs` for each job. No restart needed -- takes effect on next run. |
+| Workspace files not injected | LOW | Check workspace path. Fix path in `agents.list[].workspace`. Restart gateway. |
+| Auth profiles missing | LOW | Copy `auth-profiles.json` from main agent directory. Restart gateway. |
+| Cross-talk between agents | MEDIUM | Review bindings order. Add explicit `accountId` to all bindings. Verify with `openclaw agents list --bindings`. Restart gateway. May need to clear stale session keys. |
+| Plugin ID mismatch warning | LOW | Align `package.json` name with `openclaw.plugin.json` id (already done in v1.1 fix). Cosmetic only -- does not affect functionality. |
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Sandbox tool allow list (Pitfall 1) | Phase 1: Agent Creation | `openclaw sandbox explain --agent pricelabs` shows `pricelabs_*` |
+| Plugin tool visibility (Pitfall 2) | Phase 1: Agent Creation | Agent responds to "show me my listings" with actual PriceLabs data |
+| Telegram bot migration (Pitfall 3) | Phase 2: Channel Routing | `openclaw channels status --probe` shows both bots connected |
+| Binding precedence (Pitfall 4) | Phase 2: Channel Routing | Routing test matrix: send to each channel, verify correct agent in logs |
+| Cron job targeting (Pitfall 5) | Phase 3: Cron Jobs | `openclaw cron list` shows correct `agentId` + manual run produces correct output |
+| Workspace brain files (Pitfall 6) | Phase 1: Agent Creation | Agent echoes AGENTS.md instructions when asked about its role |
+| Auth profiles (Pitfall 7) | Phase 1: Agent Creation | Agent completes first LLM call successfully |
+| Slack channel allowlist (Integration) | Phase 2: Channel Routing | Messages in `#pricelabs` Slack channel trigger agent response |
+| Gateway restart after config changes | All phases | Always restart gateway after config changes. Never assume hot reload. |
+| Cross-talk validation | Phase 4: End-to-End Validation | Full matrix test: each agent only responds to its own channels/bots |
 
 ## Sources
 
-### PriceLabs API and Domain
-- [PriceLabs Customer API Documentation](https://help.pricelabs.co/portal/en/kb/articles/pricelabs-api) -- HIGH confidence
-- [PriceLabs API SwaggerHub](https://app.swaggerhub.com/apis-docs/Customer_API/customer_api/1.0.0-oas3) -- HIGH confidence
-- [PriceLabs Common Pricing Mistakes](https://hello.pricelabs.co/common-pricing-mistakes-airbnb-vacation-rental-owners-make/) -- HIGH confidence
-- [Top 6 PriceLabs Mistakes (MyPerfectHost)](https://www.myperfecthost.com/blog/how-to-fix-the-biggest-short-term-rental-pricing-mistakes-using-pricelabs) -- MEDIUM confidence
-- [PriceLabs Revenue Management Strategy 2026](https://hello.pricelabs.co/blog/revenue-management-strategy/) -- MEDIUM confidence
-- [MotoPress API Currency Issue](https://motopress.com/forums/topic/api-issue-pricelabs-eur-currency-not-recognized-by-the-plugin/) -- MEDIUM confidence
-- Project research: `research/02-api-reference.md`, `research/03-optimization-playbook.md`, `research/05-algorithm-and-settings.md`, `research/07-common-mistakes.md` -- HIGH confidence
+### OpenClaw Official Documentation (HIGH confidence)
+- Multi-Agent Routing: `/home/NGA/openclaw/docs/concepts/multi-agent.md` -- agent isolation, bindings, routing precedence
+- Agent Workspace: `/home/NGA/openclaw/docs/concepts/agent-workspace.md` -- file layout, bootstrap injection, token budget
+- Multi-Agent Sandbox & Tools: `/home/NGA/openclaw/docs/tools/multi-agent-sandbox-tools.md` -- tool policy precedence, migration from single agent
+- Cron Jobs: `/home/NGA/openclaw/docs/automation/cron-jobs.md` -- `agentId` binding, delivery targets, skip bug
+- Plugins: `/home/NGA/openclaw/docs/tools/plugin.md` -- discovery, config validation, plugin ID resolution
+- Skills: `/home/NGA/openclaw/docs/tools/skills.md` -- per-agent vs shared, precedence rules
+- CLI Agents: `/home/NGA/openclaw/docs/cli/agents.md` -- add/set-identity commands
+- System Prompt: `/home/NGA/openclaw/docs/concepts/system-prompt.md` -- bootstrap file injection, token limits
 
-### OpenClaw Security
-- [OpenClaw Official Security Documentation](https://docs.openclaw.ai/gateway/security) -- HIGH confidence
-- [Snyk: 280+ Leaky Skills in ClawHub](https://snyk.io/blog/openclaw-skills-credential-leaks-research/) -- HIGH confidence
-- [Cisco: Personal AI Agents Are a Security Nightmare](https://blogs.cisco.com/ai/personal-ai-agents-like-openclaw-are-a-security-nightmare) -- HIGH confidence
-- [CrowdStrike: OpenClaw AI Super Agent Security](https://www.crowdstrike.com/en-us/blog/what-security-teams-need-to-know-about-openclaw-ai-super-agent/) -- HIGH confidence
-- [Kaspersky: OpenClaw Vulnerabilities](https://www.kaspersky.com/blog/openclaw-vulnerabilities-exposed/55263/) -- HIGH confidence
-- [VentureBeat: OpenClaw Security Model](https://venturebeat.com/security/openclaw-agentic-ai-security-risk-ciso-guide) -- MEDIUM confidence
-- [Giskard: OpenClaw Data Leakage and Prompt Injection](https://www.giskard.ai/knowledge/openclaw-security-vulnerabilities-include-data-leakage-and-prompt-injection-risks) -- MEDIUM confidence
-- [Microsoft: Running OpenClaw Safely](https://www.microsoft.com/en-us/security/blog/2026/02/19/running-openclaw-safely-identity-isolation-runtime-risk/) -- HIGH confidence
+### Actual v1.1 Post-Mortems (HIGH confidence)
+- Sandbox tool filtering root cause: `/mnt/c/Projects/pricelabs-agent/.planning/debug/openclaw-plugin-tools.md`
+- Plugin ID mismatch fix: same file, package.json name alignment
+- Known issues from PROJECT.md: sandbox allow glob, plugin ID mismatch, Telegram cron `--to` requirement, cron skip bug #17852
 
-### AI Agent Patterns
-- [Permit.io: Human-in-the-Loop for AI Agents](https://www.permit.io/blog/human-in-the-loop-for-ai-agents-best-practices-frameworks-use-cases-and-demo) -- MEDIUM confidence
-- [OWASP AI Agent Security Top 10 (2026)](https://medium.com/@oracle_43885/owasps-ai-agent-security-top-10-agent-security-risks-2026-fc5c435e86eb) -- MEDIUM confidence
-- [Guardrails-by-Construction Approach](https://micheallanham.substack.com/p/transitioning-to-guardrails-by-construction) -- MEDIUM confidence
-- [Vellum: 2026 Guide to AI Agent Workflows](https://www.vellum.ai/blog/agentic-workflows-emerging-architectures-and-design-patterns) -- MEDIUM confidence
+### Live Configuration Inspection (HIGH confidence)
+- Current `openclaw.json`: `/home/NGA/.openclaw/openclaw.json` -- existing sandbox config, tool allow list, channel structure, plugin config
+- Current `jobs.json`: `/home/NGA/.openclaw/cron/jobs.json` -- existing cron jobs, delivery failures (`"cron delivery target is missing"`)
+- PriceLabs plugin: `/home/NGA/.openclaw/extensions/pricelabs/` -- index.ts, openclaw.plugin.json, tool-definitions.json
+
+---
+*Pitfalls research for: Adding dedicated PriceLabs agent to existing OpenClaw setup (v1.2)*
+*Researched: 2026-02-26*

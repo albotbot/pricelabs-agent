@@ -1,236 +1,198 @@
 # Project Research Summary
 
-**Project:** PriceLabs AI Revenue Management Agent
-**Domain:** AI Agent for Short-Term Rental Revenue Management (OpenClaw + PriceLabs API)
-**Researched:** 2026-02-22
+**Project:** PriceLabs Agent v1.2 -- Agent Identity & Production Setup
+**Domain:** OpenClaw multi-agent configuration (config + markdown only, zero new code)
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This project builds an AI revenue management agent that runs entirely within the OpenClaw runtime, wrapping PriceLabs' 12-endpoint Customer API to deliver proactive portfolio monitoring, interactive analytics, and human-approved pricing optimization via Slack and Telegram. Experts build this type of system by treating the AI runtime (OpenClaw) as the orchestration layer, the external API (PriceLabs) as a typed tool surface via MCP, and the messaging channels as the sole user interface. The recommended approach is a multi-skill OpenClaw agent backed by a custom TypeScript MCP server that handles API authentication, rate limiting, input validation, and caching internally -- keeping the agent's reasoning clean and the API interactions safe.
+v1.2 is a pure configuration and content authoring milestone. The PriceLabs integration shipped in v1.1 with a working MCP server (28 tools), plugin bridge, 4 skill files, and cron jobs -- all running under the main agent ("Albot"). v1.2 transforms this into a dedicated, isolated OpenClaw agent with its own workspace brain, identity, messaging channels, and permanent cron jobs. No TypeScript code changes. No new npm packages. Every deliverable is either a Markdown file, a JSON config edit, or a CLI command. The OpenClaw multi-agent system is well-documented and already proven on this gateway (two inactive agent stubs exist at `~/.openclaw/agents/`).
 
-The core architectural insight is that OpenClaw is not a library to import but the entire runtime environment. There is no web server, no custom Slack bot, no separate scheduler to build. Skills define agent behavior, MCP servers provide typed tools, cron handles automation, and channels handle delivery. The stack is narrow by design: TypeScript MCP server with `@modelcontextprotocol/sdk`, SQLite for persistence via `better-sqlite3`, and OpenClaw's native cron and channel systems. The agent decomposes into 5 focused skills (monitor, analyst, optimizer, reporter, domain knowledge) to balance token economy against behavioral specificity.
+The recommended approach is a strict dependency-ordered build: workspace files first (the agent needs a brain before it can think), then agent registration with auth profiles, then channel routing (Telegram dedicated bot, Slack peer-channel binding), then permanent cron jobs (which need working delivery targets). Each phase has a clear validation gate. The critical architectural insight is that plugins are global (not per-agent) -- the PriceLabs MCP bridge stays untouched, and per-agent `tools.allow` controls which agent sees the 28 tools. Skills move from the main workspace to the dedicated workspace as proper `SKILL.md` directories with YAML frontmatter.
 
-The primary risks are financial: DSO overrides bypass all PriceLabs safety rails including minimum price floors, erroneous DSO dates are silently dropped with no error, and there is no API undo mechanism. These risks demand a pre-write validation layer in the MCP server (not in skill instructions where the LLM cannot reliably enforce them) and a strict human-in-the-loop approval flow for every write operation. Secondary risks include API rate limit exhaustion from aggressive querying, API key exposure through skill or log leakage, and approval fatigue at portfolio scale. All critical pitfalls must be addressed in the MCP server foundation phase before any write operations are enabled.
+The top risk is a repeat of the v1.1 sandbox tool allow bug: when a new agent entry has its own `sandbox` block, the global `tools.sandbox.tools.allow` may not inherit, silently stripping all 28 `pricelabs_*` tools. This was the root cause of the v1.1 debug session and will recur unless `pricelabs_*` is explicitly added to the new agent's tool allow list. The second risk is the Telegram flat-to-multi-account config migration -- a breaking structural change that can disconnect the main agent's existing bot if done incorrectly. Both risks are well-understood and have verified prevention steps.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack centers on OpenClaw as the sole runtime with no external web frameworks, schedulers, or bot frameworks. All infrastructure concerns (process lifecycle, scheduling, channel routing, session management) are handled by the OpenClaw Gateway. Development effort focuses on two custom artifacts: SKILL.md files defining agent behavior, and a TypeScript MCP server wrapping the PriceLabs API.
+Zero new dependencies. v1.2 uses only what is already deployed. See [STACK.md](./STACK.md) for full config syntax and exact CLI commands.
 
-**Core technologies:**
-- **OpenClaw Gateway** (2026.2.x): Agent runtime, scheduling, channel routing -- the entire operating environment
-- **Claude Opus 4.6**: LLM backbone for revenue analysis reasoning and natural language interaction
-- **Custom PriceLabs MCP Server** (`@modelcontextprotocol/sdk` 1.26.x + `zod` 3.25+): Wraps 12 API endpoints as typed MCP tools with built-in rate limiting, caching, and validation
-- **SQLite** (`better-sqlite3` 11.x): Historical data persistence, trend tracking, audit logs -- zero-ops, ACID-compliant
-- **OpenClaw Cron**: Native scheduling for daily/weekly/monthly automated workflows
-- **Slack** (Bolt SDK via OpenClaw) + **Telegram** (grammY via OpenClaw): Primary interactive and delivery channels
+**Core technologies (all config-only):**
+- **OpenClaw Gateway v2026.1.6+**: Multi-agent runtime with per-agent sandbox, tool config, and binding-based routing. Already deployed.
+- **OpenClaw `agents.list[]`**: Declares the `pricelabs` agent with dedicated workspace, agentDir, identity, model, and tool permissions. Pure JSON config.
+- **OpenClaw `bindings[]`**: Routes Telegram (account-based) and Slack (peer-channel-based) messages to the correct agent. Most-specific-wins deterministic routing.
+- **OpenClaw `cron` CLI**: Registers permanent jobs with `--agent pricelabs` flag. Jobs persist in `~/.openclaw/cron/jobs.json`.
+- **Markdown workspace files**: AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, MEMORY.md, BOOT.md -- the agent's brain, loaded at session start.
+- **AgentSkills format**: Existing 4 skill `.md` files restructured into `skills/<name>/SKILL.md` directories with YAML frontmatter.
 
-**Critical version requirements:** Node.js 22 LTS (required for MCP server and built-in fetch), MCP SDK 1.26.x (stable stdio transport).
-
-See [STACK.md](./STACK.md) for full details including configuration examples, directory structure, and alternatives considered.
+**Critical version requirement:** OpenClaw Gateway v2026.1.6+ for per-agent `sandbox` and `tools` config in `agents.list[]`.
 
 ### Expected Features
 
-**Must have (table stakes) -- 7 features:**
-1. **Daily Portfolio Health Summary** (TS-1) -- The heartbeat; push notifications replace manual dashboard checks
-2. **Underperformance Detection and Alerting** (TS-2) -- Interpret health scores with context and recommended actions
-3. **Natural Language Q&A** (TS-3) -- Conversational PriceLabs interface; replaces dashboard for routine checks
-4. **Pricing Change Recommendations with Human Approval** (TS-4) -- Core agent promise; approval-gated write operations
-5. **Orphan Day Detection and Fill Strategies** (TS-5) -- Highest-impact quick win (7% revenue increase in testing)
-6. **Weekly Optimization Report** (TS-6) -- Automates PriceLabs' recommended 15-30 min weekly review loop
-7. **Booking Pace vs STLY Tracking** (TS-7) -- Fundamental leading indicator for revenue management
+See [FEATURES.md](./FEATURES.md) for content patterns, sizing targets, and observed examples from other agents.
 
-**Should have (differentiators) -- 8 features:**
-- **Event-Based Pricing Recommendations** (D-1) -- Detects demand spikes the algorithm may underweight
-- **Contextual Base Price Calibration** (D-2) -- Monthly recommendation with full market context
-- **Competitive Position Analysis** (D-3) -- Market percentile data translated to actionable prose
-- **Multi-Listing Batch Operations** (D-4) -- Scales approval workflow for 10+ listing portfolios
-- **Revenue Impact Tracking** (D-5) -- Unique differentiator; tracks outcomes of approved changes
-- **Cancellation Impact Analysis** (D-6) -- Reactive fill strategies for newly open dates
-- **Configurable Alert Thresholds** (D-7) -- Signal-to-noise tuning for different user profiles
-- **Demand Calendar Visualization** (D-8) -- PriceLabs demand colors rendered in chat
+**Must have (table stakes):**
+- AGENTS.md -- operating instructions, safety rules, tool usage protocol (target: 2,500-4,000 chars)
+- SOUL.md -- professional revenue analyst persona, not casual Albot personality (target: 1,500-2,500 chars)
+- USER.md -- Beau's profile, CST timezone, STR business context (target: 400-700 chars)
+- IDENTITY.md -- unique agent name, emoji, distinct from main agent (target: 200-400 chars)
+- TOOLS.md -- quick reference for 28 MCP tools, rate limits, safety gate, skill pointers (target: 800-1,500 chars)
+- skills/ directory -- 4 existing skills migrated to workspace-scoped SKILL.md format
+- Agent registration in openclaw.json with proper agentDir, workspace, sandbox, tools
+- Channel bindings -- dedicated Telegram bot (BotFather), dedicated #pricelabs Slack channel
+- Permanent cron jobs -- daily health + weekly optimization targeting dedicated channels
 
-**Defer indefinitely (anti-features):**
-- Fully autonomous pricing (no approval gate)
-- Custom pricing algorithm competing with PriceLabs HLP
-- Web dashboard or mobile app
-- Direct OTA integrations (Airbnb/Vrbo)
-- Guest communication features
-- Revenue forecasting engine
-- Multi-pricing-tool support
+**Should have (differentiators):**
+- BOOT.md -- gateway startup health check and "online" notification (under 500 chars)
+- MEMORY.md -- seeded portfolio overview, grows over time with operational history
+- Per-agent model selection -- cheaper model for routine cron, Opus for interactive analysis
+- Per-agent sandbox -- restrict filesystem and tool access to PriceLabs scope only
 
-**Critical feature dependency path:** TS-1 --> TS-2 --> TS-4 --> TS-5 (monitoring to actionable agent)
-
-See [FEATURES.md](./FEATURES.md) for full feature specifications, complexity assessments, and competitive positioning.
+**Defer (v2+):**
+- Interactive bootstrap Q&A (pre-seed workspace instead, set `skipBootstrap: true`)
+- HEARTBEAT.md (keep empty -- cron handles all scheduled work)
+- Agent-to-agent messaging (keep disabled, PriceLabs agent is self-contained)
+- Multi-user support, auto-approval, seasonal profiles, monthly strategy reports
+- Canvas UI, voice/TTS, QMD memory backend, workspace git repo
 
 ### Architecture Approach
 
-The system follows OpenClaw's native 4-layer architecture: Gateway (control plane + channels), Integration (MCP servers + skills), Execution (agent turns + cron jobs), and Intelligence (Claude Opus 4.6 reasoning). The PriceLabs agent maps cleanly onto this model with a custom MCP server as the integration layer, 5 focused skills as the behavior layer, SQLite (via Anthropic's official `@anthropic/mcp-sqlite`) as the persistence layer, and channel-native approval as the human-in-the-loop mechanism.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for system diagram, data flow, and config change inventory.
+
+The architecture separates cleanly into existing infrastructure (unchanged) and new configuration layers. The PriceLabs plugin remains global -- both agents share the same MCP server process via stdio. Routing is the new layer: Telegram uses multi-account (one BotFather bot per agent), Slack uses peer-channel binding (single app, channel ID routes to agent). Each agent gets an isolated workspace, session store, and auth profile directory.
 
 **Major components:**
-1. **PriceLabs MCP Server** -- Custom TypeScript server exposing 11 tools (7 read, 4 write) with internal rate limiting, TTL caching, input validation, and error normalization
-2. **SQLite MCP Server** -- Anthropic's official `@anthropic/mcp-sqlite` for 6 tables: listing_snapshots, price_snapshots, actions_log, market_snapshots, reservations, kpi_history
-3. **5 Specialized Skills** -- pricelabs-monitor (cron health checks), pricelabs-analyst (interactive queries), pricelabs-optimizer (pricing recommendations with approval), pricelabs-reporter (weekly/monthly reports), pricelabs-domain (always-loaded reference knowledge)
-4. **Cron Schedule** -- 5 jobs: daily health (8am), optimization scan (Mon+Thu 9am), neighborhood analysis (Mon 10am), monthly strategy (1st 9am), stale sync check (every 4hr)
-5. **Channel-Native Approval** -- Recommendations announced to Slack/Telegram; user approves in-channel; pending_recommendations table tracks state
+1. **openclaw.json config** -- agents.list with main + pricelabs, bindings for routing, telegram accounts for multi-bot, slack channel allowlist. MODIFIED (major).
+2. **Workspace: ~/.openclaw/workspace-pricelabs/** -- all brain files + skills/ directory. Agent runtime injects these into every context window. NEW.
+3. **Agent state: ~/.openclaw/agents/pricelabs/** -- auth-profiles.json (copied from main), sessions directory. NEW.
+4. **Telegram: pricelabs account** -- dedicated bot token, dmPolicy: allowlist, bound via accountId. NEW.
+5. **Slack: #pricelabs channel** -- added to channel allowlist with requireMention: false, bound via peer.kind + peer.id. NEW.
+6. **Cron jobs** -- 4 new jobs (daily health x2, weekly optimization x2) with `--agent pricelabs` and explicit delivery targets. NEW.
+7. **PriceLabs plugin + MCP server** -- completely unchanged. Global plugin, 28 tools, stdio bridge.
 
-**Key architectural patterns:**
-- Tool-Then-Reason: Always fetch data via MCP before analyzing; never hallucinate numbers
-- Snapshot-Before-Compare: Store data in SQLite before every comparison for trend detection
-- Announce-Then-Approve: Cron generates recommendations; interactive sessions execute them
-- Batch API Calls: Use PriceLabs' batch endpoints to minimize request count
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for full component diagrams, data flows, schema definitions, and cron configurations.
+**Key architectural decisions:**
+- Plugins are global, not per-agent. Tool visibility controlled by per-agent `tools.allow`/`tools.deny`.
+- Telegram requires separate bot per agent. Slack uses one app with channel routing.
+- Skills in `<workspace>/skills/` are agent-scoped (highest precedence). Domain knowledge lives in skills (on-demand), not bootstrap files (every-turn).
+- Cron jobs MUST have `--agent pricelabs` flag. Without it, jobs silently fall back to the default agent.
+- Auth profiles are per-agent. Must copy from main agent directory.
 
 ### Critical Pitfalls
 
-The top 5 pitfalls that must be addressed architecturally (not just documented):
+See [PITFALLS.md](./PITFALLS.md) for all 7 critical pitfalls, integration gotchas, and the "looks done but isn't" checklist.
 
-1. **DSO Overwrites All Safety Rails** -- Fixed-price DSOs bypass minimum price floors. A $50 DSO on a $150/night listing goes live. Prevention: MCP server must fetch listing min price and validate effective rate before every DSO write. This validation cannot live in skill instructions where the LLM cannot reliably enforce it.
-
-2. **Erroneous DSO Dates Silently Omitted** -- API returns 200 OK but drops invalid dates without warning. Prevention: POST-then-GET verification after every DSO write; reconcile requested vs confirmed dates; report discrepancies to user.
-
-3. **No Undo for API Writes** -- Price changes sync to live OTAs. No rollback endpoint exists. Prevention: Snapshot current values before every write; build rollback capability that re-writes old values; consider 5-minute execution delay with cancel option.
-
-4. **API Key Exposure via Skills/Logs** -- 7.1% of ClawHub skills contain credential leaks (Snyk, Feb 2026). Prevention: Keep API key exclusively in MCP server env vars; never pass through skill instructions; enable log redaction; run `openclaw security audit --deep`.
-
-5. **Rate Limit Exhaustion** -- 1000 req/hr; a "how is my portfolio doing?" query can trigger 100+ calls in seconds. Prevention: Token bucket rate limiter in MCP server; aggressive caching (listings 1hr, prices 6hr, neighborhood 24hr); budget allocation per workflow type.
-
-See [PITFALLS.md](./PITFALLS.md) for all 18 pitfalls with full prevention strategies and phase-specific warnings.
+1. **Sandbox tool allow list does not inherit** -- The `pricelabs_*` glob in global `tools.sandbox.tools.allow` may not carry to the new agent's sandbox scope. Must explicitly set `agents.list[].tools.sandbox.tools.allow` including `pricelabs_*`. This is a REPEAT of the v1.1 root-cause bug. Verify with `openclaw sandbox explain --agent pricelabs`. Phase 2.
+2. **Telegram flat-to-multi-account migration breaks existing bot** -- Moving from `channels.telegram.botToken` (top-level) to `channels.telegram.accounts.default.botToken` is a breaking config restructure. Must migrate the existing bot FIRST, verify it still works, THEN add the pricelabs bot. Phase 3.
+3. **Auth profiles not copied to new agent directory** -- The pricelabs agent cannot make LLM calls without auth. Auth is per-agent at `~/.openclaw/agents/<id>/agent/auth-profiles.json`. Must copy from main immediately after creating the agent directory. Phase 2.
+4. **`agentDir` not `agentsDir` typo** -- Using the plural `agentsDir` crashed the gateway 39 times on 2026-02-14. Config validator rejects unknown keys. Always use singular `agentDir`. Phase 2.
+5. **Cron jobs target wrong agent** -- Jobs created without `--agent pricelabs` silently default to the main agent. The failure mode is silent: the job runs, but with the wrong workspace and no PriceLabs skills. Verify with `openclaw cron list` after every job creation. Phase 4.
 
 ## Implications for Roadmap
 
-Based on the combined research, the project naturally decomposes into 5 phases driven by technical dependencies, risk ordering, and the read-before-write principle.
+Based on the dependency chain: Workspace files --> Agent registration --> Channel routing --> Cron jobs --> Validation.
 
-### Phase 1: MCP Server Foundation + Infrastructure Security
+### Phase 1: Workspace Brain Creation
+**Rationale:** Everything depends on workspace files existing before the agent is activated. Brain files define agent identity and behavior. Skills must be migrated to SKILL.md format. No runtime changes -- this phase is pure content authoring.
+**Delivers:** Complete workspace directory at `~/.openclaw/workspace-pricelabs/` with all brain files and 4 migrated skills.
+**Addresses:** AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, BOOT.md, MEMORY.md, skills/ migration.
+**Avoids:** Workspace brain files ignored (Pitfall 6) by keeping total bootstrap token overhead under ~2,000 tokens. Domain knowledge stays in skills (on-demand), not bootstrap files (every-turn).
+**Token budget constraint:** AGENTS.md + SOUL.md + USER.md + IDENTITY.md + TOOLS.md + HEARTBEAT.md must total under ~2,000 tokens combined. This is the single most important design constraint for this phase.
 
-**Rationale:** Everything depends on the MCP server. No skill, cron job, or feature works without typed API access. Security hardening must happen before any credentials are configured -- not retrofitted later.
+### Phase 2: Agent Registration + Auth
+**Rationale:** Agent must exist in openclaw.json before bindings or cron can reference it. Auth profiles must be copied immediately to enable LLM calls.
+**Delivers:** Working agent entry in `agents.list[]` with correct workspace, agentDir, sandbox, tools. Auth profiles copied. Agent responds to direct messages (no channel routing yet).
+**Addresses:** Agent registration, per-agent sandbox config, tool allow list with `pricelabs_*`, auth profile isolation.
+**Avoids:** Sandbox tool allow bug (Pitfall 1) by explicitly setting `pricelabs_*` in agent tools config. Auth failure (Pitfall 7) by copying auth-profiles.json immediately. `agentDir` typo (Pitfall 4) by using verified config from docs.
+**Validation gate:** `openclaw sandbox explain --agent pricelabs` shows `pricelabs_*`. Agent responds to "hello" with correct persona. Agent responds to "show me my listings" with actual PriceLabs data.
 
-**Delivers:** A working PriceLabs MCP server with all read-only tools, rate limiting, caching, input validation. OpenClaw Gateway configured with Docker sandbox, tool allowlists, loopback binding, token auth. The `pricelabs-domain` skill providing always-on domain knowledge.
+### Phase 3: Channel Routing (Telegram + Slack)
+**Rationale:** Channel isolation must work before cron jobs can deliver to dedicated targets. Telegram migration (flat to multi-account) is a breaking change that must be done carefully and sequentially.
+**Delivers:** Dedicated Telegram bot connected and routing to pricelabs agent. Dedicated #pricelabs Slack channel routing to pricelabs agent. Main agent unaffected on existing channels.
+**Addresses:** Dedicated Telegram bot, Slack channel binding, bindings configuration, channel isolation.
+**Avoids:** Telegram migration breaking existing bot (Pitfall 3) by migrating to multi-account format FIRST with existing bot, verifying, THEN adding new bot. Binding cross-talk (Pitfall 4) by using explicit accountId on all Telegram bindings and peer.id on Slack bindings.
+**Validation gate:** `openclaw channels status --probe` shows both Telegram bots connected. Messages to PriceLabs bot route to pricelabs agent. Messages to Albot route to main agent. Messages in #pricelabs Slack channel route to pricelabs agent.
 
-**Addresses features:** Foundation for all features (no user-facing features yet)
+### Phase 4: Permanent Cron Jobs
+**Rationale:** Cron jobs need working agent + working delivery channels. Must be the last functional phase.
+**Delivers:** 4 permanent cron jobs (daily health x2 channels, weekly optimization x2 channels) targeting dedicated channels with `--agent pricelabs`.
+**Addresses:** Daily health check scheduling, weekly optimization scheduling, cron agentId targeting, delivery target configuration.
+**Avoids:** Cron targeting wrong agent (Pitfall 5) by always using `--agent pricelabs` flag and verifying with `openclaw cron list`. Telegram delivery failure by using explicit `--to <chatId>`.
+**Validation gate:** `openclaw cron list` shows all 4 jobs with `agentId: "pricelabs"`. `openclaw cron run <jobId>` produces correct output in correct channel. No reports appear in main agent channels.
 
-**Avoids pitfalls:** P4 (rate limit exhaustion -- rate limiter from day one), P5 (API key exposure -- credential isolation from day one), P6 (MCP system access -- Docker sandbox from day one), P18 (prompt injection -- channel security from day one)
-
-**Estimated scope:** MCP server TypeScript project with 7 read tools, rate limiter, cache layer, Zod schemas. OpenClaw config with agent, MCP server, channel security, Docker sandbox. Domain knowledge skill.
-
-### Phase 2: Monitoring + Persistence + Channel Delivery
-
-**Rationale:** The daily health summary (TS-1) is the agent's heartbeat and the foundation for all other features. It requires SQLite for historical snapshots, cron for scheduling, and channel delivery for output. Booking pace (TS-7) and NL Q&A (TS-3) are read-only features that validate the entire stack end-to-end.
-
-**Delivers:** Daily automated health reports delivered to Slack and Telegram. Interactive natural language queries about portfolio data. Booking pace vs STLY tracking with alerts. Historical data accumulating in SQLite.
-
-**Addresses features:** TS-1 (Daily Health Summary), TS-3 (NL Q&A), TS-7 (Booking Pace vs STLY)
-
-**Avoids pitfalls:** P11 (dual pricing conflicts -- PMS awareness in onboarding flow), P13 (stale cache -- cache-age awareness and refresh-before-recommend), P17 (sync timing -- always communicate sync caveats)
-
-**Estimated scope:** SQLite schema creation (6 tables, indexes), pricelabs-monitor skill, pricelabs-analyst skill, pricelabs-reporter skill, Slack + Telegram channel config, 5 cron job definitions, binding rules.
-
-### Phase 3: Analysis Layer + Smart Alerting
-
-**Rationale:** With monitoring data accumulating (Phase 2), the agent can now interpret trends and surface insights. This phase adds intelligence to the read-only foundation without introducing write-operation risk. Underperformance detection (TS-2) is the bridge between monitoring and optimization.
-
-**Delivers:** Smart underperformance alerts with context and recommended actions. Weekly optimization reports replacing the manual review loop. Competitive position analysis in natural language. Demand calendar visualization in chat.
-
-**Addresses features:** TS-2 (Underperformance Detection), TS-6 (Weekly Optimization Report), D-3 (Competitive Position Analysis), D-8 (Demand Calendar Visualization)
-
-**Avoids pitfalls:** P9 (panic pricing -- STLY context prevents knee-jerk recommendations), P16 (thin market data -- check Listings Used count and flag low-confidence markets)
-
-**Estimated scope:** Enhanced monitoring logic with configurable alert thresholds, weekly report templates, neighborhood data interpretation, demand color rendering for Slack/Telegram.
-
-### Phase 4: Write Operations + Approval Workflow
-
-**Rationale:** Write operations are the highest-risk and highest-value capability. By this point, users trust the agent's analysis (Phases 2-3) and are ready to act on recommendations. The pre-write validation layer in the MCP server is the critical safety mechanism.
-
-**Delivers:** Pricing change recommendations with one-tap approval. Orphan day detection and fill strategies. Event-based DSO recommendations. Base price calibration with market context. Full audit trail of all changes.
-
-**Addresses features:** TS-4 (Pricing Recommendations + Approval), TS-5 (Orphan Day Detection), D-1 (Event-Based Recommendations), D-2 (Base Price Calibration)
-
-**Avoids pitfalls:** P1 (DSO overrides min price -- pre-write validation against listing min), P2 (silent date omission -- POST-then-GET verification), P3 (currency mismatch -- enforce currency matching), P7 (no undo -- snapshot before every write), P8 (base price yo-yo -- 30-day minimum interval), P10 (orphan creation from DSO min-stay -- calendar-aware validation)
-
-**Estimated scope:** 4 write tools in MCP server with validation layer, pricelabs-optimizer skill with approval protocol, pending_recommendations table, snapshot/rollback mechanism, actions audit log, pre-flight checklist enforcement.
-
-### Phase 5: Scale + Feedback Loop
-
-**Rationale:** Once the core agent works for a single portfolio, scale features make it viable for larger portfolios and build the trust feedback loop that makes the agent increasingly valuable over time.
-
-**Delivers:** Batch operations for multi-listing portfolios. Revenue impact tracking for approved changes. Cancellation impact analysis. Configurable alert thresholds for different user profiles.
-
-**Addresses features:** D-4 (Batch Operations), D-5 (Revenue Impact Tracking), D-6 (Cancellation Impact Analysis), D-7 (Configurable Thresholds)
-
-**Avoids pitfalls:** P12 (approval fatigue -- batched recommendations with tiered approval), P15 (inconsistent weekly pricing -- market-type detection)
-
-**Estimated scope:** Batch approval UX, change-outcome tracking (7/14/30 day follow-ups), reservation monitoring for cancellations, user preference configuration system.
+### Phase 5: End-to-End Validation + Cleanup
+**Rationale:** Full system validation across all integration points. Remove PriceLabs skills from main workspace to complete the separation.
+**Delivers:** Verified multi-agent system with no cross-talk. PriceLabs skills removed from main workspace. Documentation of deployment procedure.
+**Addresses:** Cross-talk validation, main workspace cleanup, deployment documentation.
+**Validation gate:** Full routing test matrix (each channel/bot tested with both domain-specific and generic questions). Main agent unaffected. Cron deliveries arrive in correct channels. "Looks done but isn't" checklist from PITFALLS.md passes completely.
 
 ### Phase Ordering Rationale
 
-- **Security first, features second:** Phase 1 establishes Docker sandbox, tool allowlists, credential isolation, and rate limiting before any feature code runs. This is non-negotiable given the Snyk findings on skill credential leaks.
-- **Read before write:** Phases 2-3 are entirely read-only. This lets the agent prove its analytical value before being trusted with pricing changes, and lets the operator validate data accuracy before granting write access.
-- **Foundation dependency chain:** MCP server (Phase 1) --> SQLite + cron (Phase 2) --> analysis intelligence (Phase 3) --> write operations (Phase 4) --> scale features (Phase 5). Each phase builds on the prior; no phase can be meaningfully started without its predecessor.
-- **Risk graduation:** Financial risk increases across phases. Phase 2-3 carry zero financial risk (read-only). Phase 4 introduces controlled financial risk behind approval gates. Phase 5 increases throughput of financial decisions.
-- **Pitfall alignment:** Critical pitfalls (P1-P7) are addressed in Phases 1 and 4. Moderate pitfalls (P8-P13) are addressed in Phases 3-4. Minor pitfalls (P14-P18) are addressed across Phases 2-5.
+- **Dependency chain is strict:** Workspace files must exist before agent registration. Agent must be registered before bindings can reference it. Bindings must work before cron can deliver to dedicated channels.
+- **Risk frontloading:** The two highest-risk pitfalls (sandbox tool allow, auth profiles) are in Phase 2 with immediate verification gates. The Telegram migration (third highest risk) is in Phase 3 with a sequential rollback-safe approach.
+- **Isolation of breaking changes:** The Telegram flat-to-multi-account migration is isolated in Phase 3. If it fails, Phase 1 and 2 work is unaffected. Rollback is straightforward (revert channels.telegram config).
+- **Content before config:** Phase 1 is pure content authoring (Markdown files) with zero runtime impact. This allows iterating on agent personality and instructions without touching the live system.
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
-- **Phase 1 (MCP Server):** OpenClaw Docker sandbox configuration has limited community examples. The `sandbox.mode: "docker"` config and tool allowlists need validation against current OpenClaw 2026.2.x docs. Also: the reported cron skip bug (#17852) needs monitoring.
-- **Phase 4 (Write Operations):** The approval UX in Slack/Telegram (interactive buttons vs reply-based) needs prototyping. Slack Block Kit interactive components for approve/reject flows need specific research. The `pending_recommendations` table and cron-to-interactive-session handoff pattern has no documented precedent in OpenClaw.
+Phases likely needing deeper research during planning:
+- **Phase 1 (Workspace Brain):** Needs phase research for optimal token budgeting. The ~2,000 token target is tight. Must analyze how much context the 28 tool schemas consume (estimated ~3,000-5,000 tokens) and what remains for workspace files. Also needs research on SKILL.md frontmatter fields (user-invocable, description format).
+- **Phase 3 (Channel Routing):** Needs phase research for the Telegram flat-to-multi-account migration. The exact behavior of `channels.telegram.botToken` (top-level) vs `channels.telegram.accounts.default.botToken` during migration is not fully documented. Test with the existing bot before adding the new one.
 
-**Phases with standard, well-documented patterns (skip deep research):**
-- **Phase 2 (Monitoring + Persistence):** SQLite schema, OpenClaw cron configuration, and channel delivery are all thoroughly documented in official OpenClaw docs and community guides. The Anthropic SQLite MCP server is a mature, documented component.
-- **Phase 3 (Analysis):** PriceLabs' health scores, demand colors, neighborhood percentiles, and STLY fields are well-documented in the API. Interpretation logic is pure agent reasoning -- no platform research needed.
-- **Phase 5 (Scale):** Batch operations use existing API batch endpoints. Impact tracking is internal SQLite logic. Configurable thresholds are a simple configuration concern.
+Phases with standard patterns (skip research-phase):
+- **Phase 2 (Agent Registration):** Well-documented in OpenClaw multi-agent docs. Exact config syntax verified in STACK.md. Copy existing agent entries as templates.
+- **Phase 4 (Cron Jobs):** CLI commands are straightforward and documented. Exact commands provided in STACK.md.
+- **Phase 5 (Validation):** Verification commands are all documented. "Looks done but isn't" checklist in PITFALLS.md is comprehensive.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | OpenClaw official docs are comprehensive. MCP SDK is mature (26k+ dependents). PriceLabs API is fully documented on SwaggerHub. No speculative technology choices. |
-| Features | HIGH | Feature map grounded in PriceLabs API capabilities, optimization playbook, competitor analysis (Guesty, DPGO), and industry benchmarks. All table-stakes features have verified API support. |
-| Architecture | HIGH | Architecture follows OpenClaw's documented patterns (skills, MCP, cron, channels). MCP server design follows official TypeScript SDK guides. Schema design follows established SQLite patterns for agent memory. |
-| Pitfalls | HIGH | Critical pitfalls sourced from PriceLabs API docs, Snyk security research (Feb 2026), OpenClaw security docs, and multiple security vendors (Cisco, CrowdStrike, Kaspersky). Domain pitfalls from PriceLabs optimization playbook and community. |
+| Stack | HIGH | All config sourced from OpenClaw official docs on disk. Zero new dependencies. Exact JSON syntax verified. |
+| Features | HIGH | Workspace file patterns verified against 3 live agents (main, nextgen, singleseed). Token sizing based on measured char counts. |
+| Architecture | HIGH | System diagram matches actual deployed infrastructure. Plugin sharing, skill precedence, and binding routing all verified in docs. |
+| Pitfalls | HIGH | Top pitfall is a direct repeat of v1.1 root cause (verified in debug log). Telegram migration risk verified against channel docs. All 7 pitfalls sourced from docs or post-mortems. |
 
-**Overall confidence:** HIGH
+**Overall confidence:** HIGH -- This is an unusually well-documented milestone. All sources are official OpenClaw docs read from the local filesystem, plus verified live configuration and v1.1 post-mortems. The risk profile is well-understood.
 
 ### Gaps to Address
 
-- **OpenClaw Docker sandbox in production:** The sandbox configuration is documented but community production examples are sparse. Validate during Phase 1 implementation that `sandbox.mode: "docker"` works with stdio MCP server spawning.
-- **Cron skip bug:** OpenClaw issue #17852 reports daily cron jobs skipping days (48hr jumps). Mitigation strategy (use 4-hourly checks for critical monitoring) is in place, but the underlying bug may be fixed in a future OpenClaw release. Monitor during Phase 2.
-- **Approval UX across channels:** The channel-native approval pattern (reply-based "yes"/"no") works for Slack threads but Telegram's UX for this is less clear. Inline keyboard buttons via grammY may be needed. Research during Phase 4 planning.
-- **PriceLabs API pagination limits:** The reservation_data endpoint supports `limit` and `offset` but maximum page sizes and total result caps are not documented. Test with real data during Phase 2.
-- **Multi-user credential isolation:** For Phase 5+ scaling, each user needs their own PriceLabs API key. OpenClaw's `auth-profiles.json` per-agent credential system needs validation for multi-tenant scenarios.
-- **In-memory cache persistence:** MCP server cache is lost on Gateway restart. For portfolios with expensive neighborhood data calls (24hr cache TTL), frequent restarts could spike API usage. Consider SQLite-backed cache if this becomes an issue.
+- **Telegram chatId for new bot:** The PriceLabs Telegram bot chatId is unknown until the first message is sent to it. Cron jobs need this ID for `--to` targeting. Must send `/start` to the new bot, capture chatId from gateway logs, then register cron jobs. This creates a manual step in the deployment flow.
+- **Slack #pricelabs channel ID:** Unknown until the channel is created. Must be created in Slack, ID captured, then used in bindings and cron. Another manual step.
+- **Token budget precision:** The ~2,000 token target for bootstrap files is an estimate based on 4 chars per token. Actual token consumption depends on the model's tokenizer. May need adjustment after first deployment using `/context list`.
+- **Cron skip bug #17852:** Known OpenClaw issue that may cause scheduled jobs to silently skip. No mitigation beyond monitoring. Must watch first week of cron runs for missed executions.
+- **`exec` tool for pricelabs agent:** PITFALLS.md raises whether the agent needs `exec`. If it only needs PriceLabs tools + workspace file access, denying `exec` improves security. Decision needed during Phase 2 planning.
 
 ## Sources
 
-### Primary (HIGH confidence)
-- [PriceLabs Customer API - SwaggerHub](https://app.swaggerhub.com/apis-docs/Customer_API/customer_api/1.0.0-oas3) -- 12 endpoints, request/response schemas
-- [PriceLabs API Help](https://help.pricelabs.co/portal/en/kb/articles/pricelabs-api) -- Auth, rate limits, setup
-- [PriceLabs Postman Collection](https://documenter.getpostman.com/view/507656/SVSEurQC) -- Endpoint examples
-- [OpenClaw Official Docs](https://docs.openclaw.ai/) -- Skills, cron, memory, channels, security, configuration
-- [OpenClaw GitHub](https://github.com/openclaw/openclaw) -- 100k+ stars, issue tracker
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) -- v1.26.x, server guide
-- [@modelcontextprotocol/sdk npm](https://www.npmjs.com/package/@modelcontextprotocol/sdk) -- 26,000+ dependents
-- [Snyk: Leaky Skills Research](https://snyk.io/blog/openclaw-skills-credential-leaks-research/) -- 283 leaky skills (7.1%)
-- [Cisco: Personal AI Agent Security](https://blogs.cisco.com/ai/personal-ai-agents-like-openclaw-are-a-security-nightmare) -- Attack vectors
-- [Microsoft: Running OpenClaw Safely](https://www.microsoft.com/en-us/security/blog/2026/02/19/running-openclaw-safely-identity-isolation-runtime-risk/) -- Isolation patterns
+### Primary (HIGH confidence -- OpenClaw official docs, read from local filesystem)
+- `/home/NGA/openclaw/docs/concepts/multi-agent.md` -- multi-agent routing, bindings, per-agent sandbox/tools
+- `/home/NGA/openclaw/docs/concepts/agent-workspace.md` -- workspace file map, bootstrap injection, token budget
+- `/home/NGA/openclaw/docs/concepts/agent.md` -- agent runtime, skill loading precedence
+- `/home/NGA/openclaw/docs/concepts/system-prompt.md` -- bootstrap file injection, context budget
+- `/home/NGA/openclaw/docs/concepts/memory.md` -- memory file layout, auto-flush
+- `/home/NGA/openclaw/docs/tools/multi-agent-sandbox-tools.md` -- tool policy precedence, migration from single agent
+- `/home/NGA/openclaw/docs/tools/skills.md` -- per-agent vs shared skills, SKILL.md format, precedence
+- `/home/NGA/openclaw/docs/automation/cron-jobs.md` -- cron agentId, delivery targets, CLI reference
+- `/home/NGA/openclaw/docs/automation/cron-vs-heartbeat.md` -- when to use cron vs heartbeat
+- `/home/NGA/openclaw/docs/channels/telegram.md` -- multi-account Telegram, BotFather setup
+- `/home/NGA/openclaw/docs/channels/slack.md` -- Socket Mode, channel allowlists, peer routing
+- `/home/NGA/openclaw/docs/channels/channel-routing.md` -- routing rules, session keys, precedence
+- `/home/NGA/openclaw/docs/start/bootstrapping.md` -- bootstrap ritual, workspace seeding
 
-### Secondary (MEDIUM confidence)
-- [OpenClaw Configuration Guide 2026](https://moltfounders.com/openclaw-configuration) -- Annotated config reference
-- [Custom Skill Creation Guide](https://zenvanriel.nl/ai-engineer-blog/openclaw-custom-skill-creation-guide/) -- Skill design patterns
-- [How OpenClaw Works](https://bibek-poudel.medium.com/how-openclaw-works-understanding-ai-agents-through-a-real-architecture-5d59cc7a4764) -- 4-layer architecture
-- [Guesty AI Agent for Revenue Management](https://www.prnewswire.com/news-releases/guesty-unveils-first-ai-agent-for-revenue-management-as-it-accelerates-multi-agent-ai-product-strategy-302630233.html) -- Competitor feature set
-- [Hostaway 2026 STR Report](https://www.hostaway.com/blog/2026-short-term-rental-report/) -- 61% AI adoption in STR
-- [PriceLabs Revenue Management Strategy 2026](https://hello.pricelabs.co/blog/revenue-management-strategy/) -- Optimization best practices
-- Project research files: `research/01-07` covering platform, API, optimization, integrations, algorithm, competitors, mistakes
+### Secondary (HIGH confidence -- verified live infrastructure)
+- `/home/NGA/.openclaw/openclaw.json` -- current v1.1 config (single-agent, global plugin)
+- `/home/NGA/.openclaw/cron/jobs.json` -- current cron jobs (5 jobs, all main agent)
+- `/home/NGA/.openclaw/workspace/` -- live main agent workspace (patterns observed)
+- `/home/NGA/.openclaw/agents/` -- existing agent directories (main, nextgen, singleseed)
+- `/home/NGA/.openclaw/extensions/pricelabs/` -- installed plugin bridge
+- `/home/NGA/.openclaw/workspace/pricelabs-skills/` -- existing 4 skill files (26,502 chars)
 
-### Tertiary (LOW confidence)
-- Jurny NIA conversational analytics -- single marketing source, needs validation
-- DPGO's 200+ market parameters claim -- competitor marketing
-- Key Data Dashboard's 40+ KPI tracking -- marketing claim, not verified
+### Tertiary (HIGH confidence -- v1.1 post-mortems)
+- `/mnt/c/Projects/pricelabs-agent/.planning/debug/openclaw-plugin-tools.md` -- sandbox tool filtering root cause
+- `/mnt/c/Projects/pricelabs-agent/.planning/PROJECT.md` -- project context, known issues, constraints
 
 ---
-*Research completed: 2026-02-22*
+*Research completed: 2026-02-26*
 *Ready for roadmap: yes*
