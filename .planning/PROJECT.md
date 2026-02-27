@@ -37,7 +37,15 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 ### Active
 
-**No active milestone — planning next**
+**Current Milestone: v1.2 Agent Identity & Production Setup**
+
+**Goal:** Transform the PriceLabs integration into a proper dedicated OpenClaw agent with its own identity, workspace brain, dedicated messaging channels, and permanent cron jobs — making it a first-class peer in the SSS multi-agent ecosystem.
+
+**Target features:**
+- Dedicated agent workspace (AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, MEMORY.md, HEARTBEAT.md, BOOT.md, BOOTSTRAP.md, skills/)
+- Multi-agent routing (separate Telegram bot, dedicated #pricelabs Slack channel, bindings)
+- Permanent cron jobs (daily health + weekly optimization targeting dedicated channels)
+- End-to-end validation (agent responds independently, cron delivers, no cross-talk)
 
 **Deferred to v2.0:**
 
@@ -141,4 +149,4 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 | One-shot cron for delivery testing | Verifiable, auto-deleting test jobs vs permanent cron | ✓ Good — clean testing pattern |
 
 ---
-*Last updated: 2026-02-26 after v1.1 milestone complete*
+*Last updated: 2026-02-26 after v1.2 milestone start*

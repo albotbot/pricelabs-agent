@@ -4,16 +4,16 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** Both milestones shipped. Planning next milestone.
+**Current Focus:** v1.2 Agent Identity & Production Setup — defining requirements
 
 ## Current Position
 
-**Milestone:** v1.1 Integration & Validation — ARCHIVED ✅
-**Phase:** All complete
-**Status:** Between milestones — ready for `/gsd:new-milestone`
-**Last activity:** 2026-02-26 -- v1.1 archived, tagged v1.1
+**Milestone:** v1.2 Agent Identity & Production Setup
+**Phase:** Not started (defining requirements)
+**Status:** Defining requirements
+**Last activity:** 2026-02-26 -- Milestone v1.2 started
 
-Progress: [####################] 100% (v1.0 + v1.1 shipped, 33 plans, 69 requirements)
+Progress: [....................] 0% (requirements being defined)
 
 ## Performance Metrics
 
@@ -73,10 +73,10 @@ Recent decisions affecting current work (full log in PROJECT.md):
 ## Session Continuity
 
 **Last Session:** 2026-02-26
-**Stopped At:** v1.1 milestone archived
-**Next Action:** `/gsd:new-milestone` when ready for next version
+**Stopped At:** Defining v1.2 requirements
+**Next Action:** Complete requirements → create roadmap
 **Resume file:** None
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-26 -- v1.1 archived, tagged, both milestones shipped*
+*Last updated: 2026-02-26 -- v1.2 milestone started*
