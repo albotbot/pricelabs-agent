@@ -151,8 +151,8 @@ Plans:
 | 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 13. Channel Routing | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 14. Permanent Cron Jobs | v1.2 | 2/2 | Complete | 2026-02-28 |
-| 15. End-to-End Validation | v1.2 | 0/? | Not started | - |
+| 15. End-to-End Validation | v1.2 | 1/2 | In progress | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-28 -- Phase 14 complete (Permanent Cron Jobs: registration + verification)*
+*Last updated: 2026-02-28 -- Phase 15 Plan 01 complete (Pre-flight + Workspace Separation)*

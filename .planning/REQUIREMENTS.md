@@ -49,7 +49,7 @@ Requirements for Agent Identity & Production Setup. Each maps to roadmap phases 
 - [ ] **E2E-01**: Full routing test matrix passes -- each channel/bot tested with domain-specific and generic questions, no cross-talk
 - [ ] **E2E-02**: Cron deliveries arrive in correct dedicated channels, not main agent channels
 - [ ] **E2E-03**: Main agent functionality unaffected -- existing cron jobs, channels, and skills work normally
-- [ ] **E2E-04**: PriceLabs skills removed from main agent workspace (complete separation)
+- [x] **E2E-04**: PriceLabs skills removed from main agent workspace (complete separation)
 
 ## v2.0 Requirements
 
@@ -119,7 +119,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | E2E-01 | Phase 15 | Pending |
 | E2E-02 | Phase 15 | Pending |
 | E2E-03 | Phase 15 | Pending |
-| E2E-04 | Phase 15 | Pending |
+| E2E-04 | Phase 15 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 29 total

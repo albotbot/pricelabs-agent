@@ -4,22 +4,22 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 14 (Permanent Cron Jobs) COMPLETE
+**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 15 (End-to-End Validation) IN PROGRESS
 
 ## Current Position
 
 **Milestone:** v1.2 Agent Identity & Production Setup
-**Phase:** 14 of 15 (Permanent Cron Jobs) -- COMPLETE
-**Plan:** 2 of 2 in current phase (all complete)
-**Status:** Phase 14 complete, Phase 15 pending
-**Last activity:** 2026-02-28 -- Completed 14-02 (Cron Job Verification)
+**Phase:** 15 of 15 (End-to-End Validation) -- IN PROGRESS
+**Plan:** 1 of 2 in current phase (15-01 complete)
+**Status:** Phase 15 Plan 01 complete (pre-flight + workspace separation), Plan 02 pending
+**Last activity:** 2026-02-28 -- Completed 15-01 (Pre-flight Checks + Workspace Separation)
 
-Progress: [█████████████████████████] 89% (33/33 plans v1.0+v1.1, 8/8 plans v1.2 phases 11-14)
+Progress: [██████████████████████████] 93% (33/33 plans v1.0+v1.1, 9/10 plans v1.2 phases 11-15)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
+- Total plans completed: 40
 - Plans failed: 0
 - Average duration: ~6.6 min/plan (automated), ~3h for live testing
 - Total execution time: ~7 hours across both milestones
@@ -39,6 +39,7 @@ Progress: [███████████████████████
 | Phase 13 P02 | 25min | 2 tasks | 1 files |
 | Phase 14 P01 | 7min | 2 tasks | 1 files |
 | Phase 14 P02 | 18min | 2 tasks | 0 files |
+| Phase 15 P01 | 2min | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [14-01] No old v1.1 cron jobs on live system -- clean registration without removal
 - [14-02] Slack-only manual trigger verification sufficient -- Telegram uses same agent/prompt, only delivery target differs
 - [14-02] Phase 14 complete: all 4 cron jobs verified delivering real portfolio data with Prism persona
+- [15-01] All 12 CLI verification checks pass -- no configuration drift from Phases 11-14
+- [15-01] E2E-04 satisfied: workspace separation confirmed across 7 dimensions without removing AlBot's pricelabs-skills
+- [15-01] Session store CLI syntax is `openclaw sessions --agent <id>` (not `openclaw sessions list --agent <id>`)
 
 ### Accumulated TODOs
 
@@ -85,11 +89,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-28T18:23:35.173Z
-**Stopped At:** Phase 15 context gathered
-**Next Action:** Plan and execute Phase 15 (End-to-End Validation)
-**Resume file:** .planning/phases/15-end-to-end-validation/15-CONTEXT.md
+**Last Session:** 2026-02-28T21:15:36Z
+**Stopped At:** Completed 15-01-PLAN.md (Pre-flight Checks + Workspace Separation)
+**Next Action:** Execute 15-02-PLAN.md (Full routing matrix, cron re-verification, main agent regression, human sign-off)
+**Resume file:** .planning/phases/15-end-to-end-validation/15-01-SUMMARY.md
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-28 -- Phase 14 complete (Permanent Cron Jobs: registration + verification)*
+*Last updated: 2026-02-28 -- Phase 15 Plan 01 complete (Pre-flight + Workspace Separation)*
