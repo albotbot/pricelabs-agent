@@ -43,7 +43,7 @@
     "delivery": {
       "mode": "announce",
       "channel": "telegram",
-      "to": "${TELEGRAM_PRISM_CHAT_ID}",
+      "to": "8283515561",
       "bestEffort": true
     }
   },
@@ -91,7 +91,7 @@
     "delivery": {
       "mode": "announce",
       "channel": "telegram",
-      "to": "${TELEGRAM_PRISM_CHAT_ID}",
+      "to": "8283515561",
       "bestEffort": true
     }
   }
