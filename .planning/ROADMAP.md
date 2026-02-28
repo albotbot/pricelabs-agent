@@ -45,7 +45,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
 - [x] **Phase 11: Workspace Brain** -- Author all workspace files and migrate skills to agent-scoped format (completed 2026-02-27)
 - [x] **Phase 12: Agent Registration** -- Register agent in openclaw.json with sandbox, tools, and auth profiles (completed 2026-02-27)
 - [x] **Phase 13: Channel Routing** -- Migrate Telegram to multi-account, create dedicated bot and Slack channel, bind routing (completed 2026-02-27)
-- [ ] **Phase 14: Permanent Cron Jobs** -- Register 4 permanent cron jobs targeting dedicated agent and channels
+- [x] **Phase 14: Permanent Cron Jobs** -- Register 4 permanent cron jobs targeting dedicated agent and channels (completed 2026-02-28)
 - [ ] **Phase 15: End-to-End Validation** -- Full routing test matrix, main agent regression, workspace cleanup
 
 ## Phase Details
@@ -112,11 +112,11 @@ Plans:
   2. All 4 jobs persist across gateway restarts (permanent, no `--delete-after-run`)
   3. Manual trigger via `openclaw cron run <jobId>` delivers output to the correct dedicated channel (not main agent channels)
   4. Cron-delivered reports use the PriceLabs agent persona and reference real portfolio data
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 14-01-PLAN.md -- Replace v1.1 cron jobs with 4 v1.2 jobs targeting pricelabs agent, register on live system
-- [ ] 14-02-PLAN.md -- Manual trigger tests and human verification of cron delivery to dedicated channels
+- [x] 14-01-PLAN.md -- Replace v1.1 cron jobs with 4 v1.2 jobs targeting pricelabs agent, register on live system
+- [x] 14-02-PLAN.md -- Manual trigger tests and human verification of cron delivery to dedicated channels
 
 ### Phase 15: End-to-End Validation
 **Goal**: Multi-agent system verified end-to-end with no cross-talk, main agent fully regression-tested, and PriceLabs skills removed from main workspace to complete separation
@@ -146,9 +146,9 @@ Plans:
 | 11. Workspace Brain | 2/2 | Complete    | 2026-02-27 | - |
 | 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 13. Channel Routing | v1.2 | 2/2 | Complete | 2026-02-27 |
-| 14. Permanent Cron Jobs | 1/2 | In Progress|  | - |
+| 14. Permanent Cron Jobs | v1.2 | 2/2 | Complete | 2026-02-28 |
 | 15. End-to-End Validation | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-27 -- Phase 13 complete (Channel Routing: Telegram + Slack)*
+*Last updated: 2026-02-28 -- Phase 14 complete (Permanent Cron Jobs: registration + verification)*
