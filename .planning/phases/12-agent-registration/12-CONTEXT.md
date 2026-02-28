@@ -42,7 +42,7 @@ Register the Prism agent in openclaw.json with per-agent sandbox, tool access, a
 - Back up openclaw.json before making changes (`cp openclaw.json openclaw.json.bak`)
 - Test gateway restart after each config change
 - If gateway fails to start, restore backup immediately
-- NEVER run `openclaw doctor --fix` or `openclaw doctor --force --yes` -- it can strip config (lesson from Feb 27 recovery)
+- Always back up openclaw.json BEFORE running `openclaw doctor --fix` -- it can strip config (lesson from Feb 27 recovery)
 - Only ONE gateway service: system-level (`/etc/systemd/system/openclaw-gateway.service`). NEVER enable user-level service -- causes duplicate processes and Telegram 409 conflicts
 - Gateway restart command: `sudo systemctl restart openclaw-gateway.service` (system-level, NOT `systemctl --user`)
 - After restart, wait ~30 seconds for Telegram rate limit cooldown if gateway was crash-looping
