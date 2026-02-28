@@ -1,0 +1,70 @@
+# Task 2 Verification: Prism Persona and Real API Data Access
+# Date: 2026-02-28T01:21:02Z
+
+## Test 1: Persona Verification
+
+Command: openclaw agent --agent pricelabs --message "Hello, who are you?"
+
+Response:
+---
+I'm Prism -- your portfolio revenue analyst for SSS. I monitor STR pricing,
+occupancy, booking pace, and market position across your listings, then
+surface data-backed recommendations to improve revenue.
+
+> Prism
+---
+
+Persona Indicators:
+- [x] Professional revenue analyst tone
+- [x] References "portfolio", "STR pricing", "occupancy", "booking pace"
+- [x] Signs with diamond "Prism" signature
+- [x] NOT Albot casual/humorous personality
+- [x] NOT generic assistant response
+- [x] References SSS (user's business entity)
+
+Result: PASS
+
+## Test 2: Tool Access and Real Data
+
+Command: openclaw agent --agent pricelabs --message "Show me my listings"
+
+Response:
+---
+I can't fetch them right now -- the PriceLabs MCP connection is down
+(`MCP server exited`), so I don't have live listing access at the moment.
+---
+
+Result: FAIL -- MCP server exited
+
+## Root Cause Analysis
+
+Gateway logs show:
+  [plugins] [pricelabs] Spawning MCP server: /mnt/c/Projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js
+  [plugins] [pricelabs] MCP server exited with code
+
+Direct test:
+  node /mnt/c/Projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js
+  -> FATAL: PRICELABS_API_KEY environment variable is required
+
+Issue: PRICELABS_API_KEY is not in the gateway's systemd service environment.
+The plugin config (plugins.entries.pricelabs) has no config.apiKey set.
+The per-agent mcp block (which was supposed to pass env vars) was rejected in Plan 12-01.
+
+## Fix Required
+
+Add PRICELABS_API_KEY to the gateway systemd service:
+  sudo systemctl edit openclaw-gateway.service
+  -> [Service]
+  -> Environment=PRICELABS_API_KEY=<key>
+
+Then: sudo systemctl daemon-reload && sudo systemctl restart openclaw-gateway.service
+
+## Auth Gate
+
+The API key value must be provided by the user. It is not available in:
+- Shell environment (empty/unset)
+- /home/NGA/.openclaw/.env (only NGA_WORKSPACE)
+- /home/NGA/.openclaw/.env.secrets (no PRICELABS entry)
+- 1Password (not authenticated)
+- openclaw.json plugin config (not set)
+- Gateway systemd unit (not set)
