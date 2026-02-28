@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 MVP** -- Phases 1-5, 43 requirements (shipped 2026-02-25)
 - ✅ **v1.1 Integration & Validation** -- Phases 6-10, 26 requirements (shipped 2026-02-26)
-- **v1.2 Agent Identity & Production Setup** -- Phases 11-15, 29 requirements
+- ✅ **v1.2 Agent Identity & Production Setup** -- Phases 11-15, 29 requirements (shipped 2026-02-28)
 
 ## Phases
 
@@ -64,8 +64,8 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 11-01-PLAN.md -- Author bootstrap workspace files (AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, HEARTBEAT.md) and validate token budget
-- [ ] 11-02-PLAN.md -- Create BOOT.md and MEMORY.md, migrate 4 skill files to SKILL.md format
+- [x] 11-01-PLAN.md -- Author bootstrap workspace files (AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, HEARTBEAT.md) and validate token budget
+- [x] 11-02-PLAN.md -- Create BOOT.md and MEMORY.md, migrate 4 skill files to SKILL.md format
 
 ### Phase 12: Agent Registration
 **Goal**: Agent is registered in OpenClaw, can authenticate for LLM calls, sees all 28 PriceLabs tools, and responds with correct persona
@@ -126,12 +126,12 @@ Plans:
   1. Full routing test matrix passes -- each channel/bot tested with both domain-specific questions ("show my listings") and generic questions ("hello"), no cross-talk between agents
   2. Cron deliveries arrive in correct dedicated channels -- health summaries and optimization reports never appear in main agent channels
   3. Main agent functionality unaffected -- existing cron jobs, Slack channels, Telegram bot, and skills all work normally
-  4. PriceLabs skill files removed from main agent workspace (`~/.openclaw/workspace/pricelabs-skills/` cleaned up), completing full agent separation
+  4. Workspace separation verified -- Prism has independent workspace, skills, sessions, and sandbox (AlBot's PriceLabs skills retained per user decision)
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 15-01-PLAN.md -- Pre-flight CLI checks and workspace separation verification (E2E-04)
-- [ ] 15-02-PLAN.md -- Full routing matrix, cron re-verification, main agent regression, and human sign-off (E2E-01, E2E-02, E2E-03)
+- [x] 15-01-PLAN.md -- Pre-flight CLI checks and workspace separation verification (E2E-04)
+- [x] 15-02-PLAN.md -- Full routing matrix, cron re-verification, main agent regression, and human sign-off (E2E-01, E2E-02, E2E-03)
 
 ## Progress
 
@@ -147,7 +147,7 @@ Plans:
 | 8. Snapshot Persistence | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 9. OpenClaw Deployment | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 10. Messaging Integration | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 11. Workspace Brain | 2/2 | Complete    | 2026-02-27 | - |
+| 11. Workspace Brain | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 13. Channel Routing | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 14. Permanent Cron Jobs | v1.2 | 2/2 | Complete | 2026-02-28 |

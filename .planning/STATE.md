@@ -11,7 +11,7 @@
 **Milestone:** v1.2 Agent Identity & Production Setup -- COMPLETE
 **Phase:** 15 of 15 (End-to-End Validation) -- COMPLETE
 **Plan:** 2 of 2 in current phase (all complete)
-**Status:** v1.2 milestone complete -- all phases (11-15) delivered, E2E validation passed, user sign-off granted
+**Status:** Milestone complete
 **Last activity:** 2026-02-28 -- Completed 15-02 (Full E2E Validation + v1.2 Milestone Sign-off)
 
 Progress: [████████████████████████████] 100% (33/33 plans v1.0+v1.1, 10/10 plans v1.2 phases 11-15)

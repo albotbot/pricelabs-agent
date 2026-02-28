@@ -21,11 +21,11 @@ Requirements for Agent Identity & Production Setup. Each maps to roadmap phases 
 
 ### Agent Registration
 
-- [ ] **AGEN-01**: Agent registered in openclaw.json `agents.list[]` with id "pricelabs", correct `agentDir` (not `agentsDir`), and workspace path
-- [ ] **AGEN-02**: Agent has per-agent sandbox config with `pricelabs_*` explicitly in `tools.sandbox.tools.allow` (not relying on global inheritance)
-- [ ] **AGEN-03**: Auth profiles copied from main agent to `~/.openclaw/agents/pricelabs/agent/auth-profiles.json` enabling LLM calls
-- [ ] **AGEN-04**: Agent responds to direct messages with correct persona (SOUL.md personality, not main agent)
-- [ ] **AGEN-05**: Agent can access all 28 PriceLabs MCP tools and return real API data when queried
+- [x] **AGEN-01**: Agent registered in openclaw.json `agents.list[]` with id "pricelabs", correct `agentDir` (not `agentsDir`), and workspace path
+- [x] **AGEN-02**: Agent has per-agent sandbox config with `pricelabs_*` explicitly in `tools.sandbox.tools.allow` (not relying on global inheritance)
+- [x] **AGEN-03**: Auth profiles copied from main agent to `~/.openclaw/agents/pricelabs/agent/auth-profiles.json` enabling LLM calls
+- [x] **AGEN-04**: Agent responds to direct messages with correct persona (SOUL.md personality, not main agent)
+- [x] **AGEN-05**: Agent can access all 28 PriceLabs MCP tools and return real API data when queried
 
 ### Channel Routing
 
@@ -49,7 +49,7 @@ Requirements for Agent Identity & Production Setup. Each maps to roadmap phases 
 - [x] **E2E-01**: Full routing test matrix passes -- each channel/bot tested with domain-specific and generic questions, no cross-talk
 - [x] **E2E-02**: Cron deliveries arrive in correct dedicated channels, not main agent channels
 - [x] **E2E-03**: Main agent functionality unaffected -- existing cron jobs, channels, and skills work normally
-- [x] **E2E-04**: PriceLabs skills removed from main agent workspace (complete separation)
+- [x] **E2E-04**: Workspace separation verified -- Prism has independent workspace, skills, sessions, and sandbox (AlBot's PriceLabs skills retained per user decision)
 
 ## v2.0 Requirements
 
@@ -100,11 +100,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WORK-07 | Phase 11 | Complete |
 | WORK-08 | Phase 11 | Complete |
 | WORK-09 | Phase 11 | Complete |
-| AGEN-01 | Phase 12 | Pending |
-| AGEN-02 | Phase 12 | Pending |
-| AGEN-03 | Phase 12 | Pending |
-| AGEN-04 | Phase 12 | Pending |
-| AGEN-05 | Phase 12 | Pending |
+| AGEN-01 | Phase 12 | Complete |
+| AGEN-02 | Phase 12 | Complete |
+| AGEN-03 | Phase 12 | Complete |
+| AGEN-04 | Phase 12 | Complete |
+| AGEN-05 | Phase 12 | Complete |
 | CHAN-01 | Phase 13 | Complete |
 | CHAN-02 | Phase 13 | Complete |
 | CHAN-03 | Phase 13 | Complete |
