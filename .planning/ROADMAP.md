@@ -112,7 +112,7 @@ Plans:
   2. All 4 jobs persist across gateway restarts (permanent, no `--delete-after-run`)
   3. Manual trigger via `openclaw cron run <jobId>` delivers output to the correct dedicated channel (not main agent channels)
   4. Cron-delivered reports use the PriceLabs agent persona and reference real portfolio data
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 14-01-PLAN.md -- Replace v1.1 cron jobs with 4 v1.2 jobs targeting pricelabs agent, register on live system
@@ -146,7 +146,7 @@ Plans:
 | 11. Workspace Brain | 2/2 | Complete    | 2026-02-27 | - |
 | 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 13. Channel Routing | v1.2 | 2/2 | Complete | 2026-02-27 |
-| 14. Permanent Cron Jobs | v1.2 | 0/? | Not started | - |
+| 14. Permanent Cron Jobs | 1/2 | In Progress|  | - |
 | 15. End-to-End Validation | v1.2 | 0/? | Not started | - |
 
 ---

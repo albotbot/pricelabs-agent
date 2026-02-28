@@ -38,11 +38,11 @@ Requirements for Agent Identity & Production Setup. Each maps to roadmap phases 
 
 ### Permanent Cron Jobs
 
-- [ ] **CRON-01**: Daily health summary cron job registered targeting pricelabs agent via `--agent pricelabs` flag, delivering to dedicated Slack channel
-- [ ] **CRON-02**: Daily health summary cron job registered targeting pricelabs agent, delivering to dedicated Telegram bot
-- [ ] **CRON-03**: Weekly optimization report cron job registered targeting pricelabs agent, delivering to dedicated Slack channel
-- [ ] **CRON-04**: Weekly optimization report cron job registered targeting pricelabs agent, delivering to dedicated Telegram bot
-- [ ] **CRON-05**: All 4 cron jobs persist across gateway restarts (permanent, not `--delete-after-run`)
+- [x] **CRON-01**: Daily health summary cron job registered targeting pricelabs agent via `--agent pricelabs` flag, delivering to dedicated Slack channel
+- [x] **CRON-02**: Daily health summary cron job registered targeting pricelabs agent, delivering to dedicated Telegram bot
+- [x] **CRON-03**: Weekly optimization report cron job registered targeting pricelabs agent, delivering to dedicated Slack channel
+- [x] **CRON-04**: Weekly optimization report cron job registered targeting pricelabs agent, delivering to dedicated Telegram bot
+- [x] **CRON-05**: All 4 cron jobs persist across gateway restarts (permanent, not `--delete-after-run`)
 
 ### End-to-End Validation
 
@@ -111,11 +111,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAN-04 | Phase 13 | Complete |
 | CHAN-05 | Phase 13 | Complete |
 | CHAN-06 | Phase 13 | Complete |
-| CRON-01 | Phase 14 | Pending |
-| CRON-02 | Phase 14 | Pending |
-| CRON-03 | Phase 14 | Pending |
-| CRON-04 | Phase 14 | Pending |
-| CRON-05 | Phase 14 | Pending |
+| CRON-01 | Phase 14 | Complete |
+| CRON-02 | Phase 14 | Complete |
+| CRON-03 | Phase 14 | Complete |
+| CRON-04 | Phase 14 | Complete |
+| CRON-05 | Phase 14 | Complete |
 | E2E-01 | Phase 15 | Pending |
 | E2E-02 | Phase 15 | Pending |
 | E2E-03 | Phase 15 | Pending |
