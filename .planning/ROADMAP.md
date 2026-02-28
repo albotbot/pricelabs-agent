@@ -112,7 +112,11 @@ Plans:
   2. All 4 jobs persist across gateway restarts (permanent, no `--delete-after-run`)
   3. Manual trigger via `openclaw cron run <jobId>` delivers output to the correct dedicated channel (not main agent channels)
   4. Cron-delivered reports use the PriceLabs agent persona and reference real portfolio data
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 14-01-PLAN.md -- Replace v1.1 cron jobs with 4 v1.2 jobs targeting pricelabs agent, register on live system
+- [ ] 14-02-PLAN.md -- Manual trigger tests and human verification of cron delivery to dedicated channels
 
 ### Phase 15: End-to-End Validation
 **Goal**: Multi-agent system verified end-to-end with no cross-talk, main agent fully regression-tested, and PriceLabs skills removed from main workspace to complete separation
