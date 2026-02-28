@@ -32,9 +32,9 @@ Requirements for Agent Identity & Production Setup. Each maps to roadmap phases 
 - [x] **CHAN-01**: Telegram config migrated from flat `botToken` to multi-account format (`channels.telegram.accounts`) without breaking existing main agent bot
 - [x] **CHAN-02**: Dedicated PriceLabs Telegram bot created via BotFather and connected as second account in OpenClaw
 - [x] **CHAN-03**: Telegram binding routes messages from PriceLabs bot to pricelabs agent (accountId-based routing)
-- [ ] **CHAN-04**: Dedicated #pricelabs Slack channel created and added to channel allowlist
-- [ ] **CHAN-05**: Slack binding routes messages in #pricelabs channel to pricelabs agent (peer-channel routing)
-- [ ] **CHAN-06**: Main agent messaging unaffected -- existing Telegram bot and Slack channels continue routing to main agent
+- [x] **CHAN-04**: Dedicated #pricelabs Slack channel created and added to channel allowlist
+- [x] **CHAN-05**: Slack binding routes messages in #pricelabs channel to pricelabs agent (peer-channel routing)
+- [x] **CHAN-06**: Main agent messaging unaffected -- existing Telegram bot and Slack channels continue routing to main agent
 
 ### Permanent Cron Jobs
 
@@ -108,9 +108,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAN-01 | Phase 13 | Complete |
 | CHAN-02 | Phase 13 | Complete |
 | CHAN-03 | Phase 13 | Complete |
-| CHAN-04 | Phase 13 | Pending |
-| CHAN-05 | Phase 13 | Pending |
-| CHAN-06 | Phase 13 | Pending |
+| CHAN-04 | Phase 13 | Complete |
+| CHAN-05 | Phase 13 | Complete |
+| CHAN-06 | Phase 13 | Complete |
 | CRON-01 | Phase 14 | Pending |
 | CRON-02 | Phase 14 | Pending |
 | CRON-03 | Phase 14 | Pending |

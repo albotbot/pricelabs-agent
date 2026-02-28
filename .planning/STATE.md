@@ -4,22 +4,22 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 13 (Channel Routing) Plan 01 COMPLETE
+**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 13 (Channel Routing) COMPLETE
 
 ## Current Position
 
 **Milestone:** v1.2 Agent Identity & Production Setup
 **Phase:** 13 of 15 (Channel Routing)
-**Plan:** 1 of 2 in current phase
-**Status:** In progress
-**Last activity:** 2026-02-28 -- Completed 13-01 (Telegram Multi-Account Migration)
+**Plan:** 2 of 2 in current phase (COMPLETE)
+**Status:** Phase complete
+**Last activity:** 2026-02-27 -- Completed 13-02 (Slack Channel Routing)
 
-Progress: [█████████████████████] 77% (33/33 plans v1.0+v1.1, 5/6 plans v1.2 phases 11-13)
+Progress: [██████████████████████] 80% (33/33 plans v1.0+v1.1, 6/6 plans v1.2 phases 11-13)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
+- Total plans completed: 37
 - Plans failed: 0
 - Average duration: ~6.6 min/plan (automated), ~3h for live testing
 - Total execution time: ~7 hours across both milestones
@@ -36,6 +36,7 @@ Progress: [█████████████████████] 77% 
 | Phase 11 P01 | 10min | 2 tasks | 6 files |
 | Phase 11 P02 | 15min | 2 tasks | 6 files |
 | Phase 13 P01 | 57min | 3 tasks | 1 files |
+| Phase 13 P02 | 25min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [13-01] Two-phase Telegram migration: restructure to multi-account first, verify AlBot, then add Prism bot
 - [13-01] dmPolicy set explicitly per-account (not relying on top-level inheritance) for safety
 - [13-01] Kept per-channel-peer dmScope -- binding already isolates agents by agentId
+- [13-02] requireMention: false for dedicated #pricelabs channel -- agent responds to every message without @-mention
+- [13-02] Single Slack app with peer-channel routing -- OpenClaw routes by channel ID, not app identity
+- [13-02] Channel ID discovery via `openclaw channels resolve` CLI (not manual Slack URL extraction)
 
 ### Accumulated TODOs
 
@@ -74,11 +78,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-28T04:37:56.058Z
-**Stopped At:** Completed 13-01-PLAN.md
-**Next Action:** Execute 13-02-PLAN.md (Slack Channel Routing)
+**Last Session:** 2026-02-27
+**Stopped At:** Completed 13-02-PLAN.md (Phase 13 complete)
+**Next Action:** Plan Phase 14 (Permanent Cron Jobs)
 **Resume file:** None
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-28 -- Phase 13 Plan 01 complete (Telegram multi-account migration)*
+*Last updated: 2026-02-27 -- Phase 13 complete (Channel Routing: Telegram + Slack)*

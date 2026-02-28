@@ -44,7 +44,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
 
 - [x] **Phase 11: Workspace Brain** -- Author all workspace files and migrate skills to agent-scoped format (completed 2026-02-27)
 - [x] **Phase 12: Agent Registration** -- Register agent in openclaw.json with sandbox, tools, and auth profiles (completed 2026-02-27)
-- [ ] **Phase 13: Channel Routing** -- Migrate Telegram to multi-account, create dedicated bot and Slack channel, bind routing
+- [x] **Phase 13: Channel Routing** -- Migrate Telegram to multi-account, create dedicated bot and Slack channel, bind routing (completed 2026-02-27)
 - [ ] **Phase 14: Permanent Cron Jobs** -- Register 4 permanent cron jobs targeting dedicated agent and channels
 - [ ] **Phase 15: End-to-End Validation** -- Full routing test matrix, main agent regression, workspace cleanup
 
@@ -96,11 +96,11 @@ Plans:
   3. Messages sent to the existing main Telegram bot continue routing to the main agent (no disruption)
   4. Messages in the dedicated #pricelabs Slack channel route to the pricelabs agent
   5. Messages in existing Slack channels continue routing to the main agent (no cross-talk)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 13-01-PLAN.md -- Migrate Telegram to multi-account format and add Prism bot with routing binding
-- [ ] 13-02-PLAN.md -- Add #pricelabs Slack channel to allowlist with peer-channel binding, verify full routing matrix
+- [x] 13-01-PLAN.md -- Migrate Telegram to multi-account format and add Prism bot with routing binding
+- [x] 13-02-PLAN.md -- Add #pricelabs Slack channel to allowlist with peer-channel binding, verify full routing matrix
 
 ### Phase 14: Permanent Cron Jobs
 **Goal**: Four permanent cron jobs deliver daily health summaries and weekly optimization reports to dedicated PriceLabs channels via the PriceLabs agent
@@ -141,10 +141,10 @@ Plans:
 | 10. Messaging Integration | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 11. Workspace Brain | 2/2 | Complete    | 2026-02-27 | - |
 | 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
-| 13. Channel Routing | 1/2 | In Progress|  | - |
+| 13. Channel Routing | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 14. Permanent Cron Jobs | v1.2 | 0/? | Not started | - |
 | 15. End-to-End Validation | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-28 -- Phase 13 Plan 01 Telegram multi-account migration complete*
+*Last updated: 2026-02-27 -- Phase 13 complete (Channel Routing: Telegram + Slack)*
