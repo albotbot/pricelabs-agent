@@ -38,6 +38,20 @@ Register the Prism agent in openclaw.json with per-agent sandbox, tool access, a
 - Back up openclaw.json before making changes (`cp openclaw.json openclaw.json.bak`)
 - Test gateway restart after each config change
 - If gateway fails to start, restore backup immediately
+- NEVER run `openclaw doctor --fix` or `openclaw doctor --force --yes` -- it can strip config (lesson from Feb 27 recovery)
+- Only ONE gateway service: system-level (`/etc/systemd/system/openclaw-gateway.service`). NEVER enable user-level service -- causes duplicate processes and Telegram 409 conflicts
+- Gateway restart command: `sudo systemctl restart openclaw-gateway.service` (system-level, NOT `systemctl --user`)
+- After restart, wait ~30 seconds for Telegram rate limit cooldown if gateway was crash-looping
+- gateway.mode MUST be "local" and gateway.tailscale.mode MUST be "off" (WSL2 constraints)
+
+### Post-Recovery State (Feb 27, 2026)
+The live openclaw.json was fully rebuilt after a cascade failure. Current state:
+- 11 agents: main/AlBot (default), nextgen, singleseed, 8 NGA workshop agents
+- AlBot has subagent access to all other agents
+- Telegram and Slack channels restored and working
+- System-level systemd service only (user-level disabled)
+- WSL2 keepalive script active to prevent VM idle shutdown
+- Pricelabs plugin installed at ~/.openclaw/extensions/pricelabs/
 
 ### Claude's Discretion
 - Exact filesystem access scope (workspace-only vs broader read access)
@@ -53,6 +67,9 @@ Register the Prism agent in openclaw.json with per-agent sandbox, tool access, a
 - Auth profiles must be copied IMMEDIATELY after creating the agent directory -- agent can't make LLM calls without them
 - Sandbox tool allow list does NOT inherit from global -- must explicitly set `pricelabs_*` in per-agent config (repeat of v1.1 root-cause bug)
 - Research documented exact openclaw.json config patterns in STACK.md and ARCHITECTURE.md
+- CRITICAL: The live config was REBUILT on Feb 27 after a cascade failure. The current config is fragile -- treat every edit as high-risk. MERGE only, never replace. Always back up first.
+- Restart with `sudo systemctl restart openclaw-gateway.service` (system-level only)
+- If Telegram shows 429 rate limit after restart, WAIT for the retry-after countdown to expire (up to ~10 min)
 
 </specifics>
 
