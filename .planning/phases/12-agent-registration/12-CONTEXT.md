@@ -13,6 +13,10 @@ Register the Prism agent in openclaw.json with per-agent sandbox, tool access, a
 <decisions>
 ## Implementation Decisions
 
+### ABSOLUTE CONSTRAINT
+- The main agent (AlBot, id: "main") MUST NEVER be removed, replaced, or modified. It is the default agent with subagent access to all other agents. Any config edit that touches AlBot's entry or removes it is FORBIDDEN.
+- Config changes are APPEND-ONLY to agents.list[]. Never rewrite the list. Never replace the file. Read the live config, add the pricelabs entry to the existing array, write back.
+
 ### Tool Access Scope
 - PriceLabs tools ONLY -- only `pricelabs_*` tools in the allow list
 - Deny `exec` tool -- Prism cannot run shell commands. Tightest sandbox.
