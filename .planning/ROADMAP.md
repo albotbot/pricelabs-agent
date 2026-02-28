@@ -127,7 +127,11 @@ Plans:
   2. Cron deliveries arrive in correct dedicated channels -- health summaries and optimization reports never appear in main agent channels
   3. Main agent functionality unaffected -- existing cron jobs, Slack channels, Telegram bot, and skills all work normally
   4. PriceLabs skill files removed from main agent workspace (`~/.openclaw/workspace/pricelabs-skills/` cleaned up), completing full agent separation
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 15-01-PLAN.md -- Pre-flight CLI checks and workspace separation verification (E2E-04)
+- [ ] 15-02-PLAN.md -- Full routing matrix, cron re-verification, main agent regression, and human sign-off (E2E-01, E2E-02, E2E-03)
 
 ## Progress
 
