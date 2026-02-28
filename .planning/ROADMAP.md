@@ -43,7 +43,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
 **Milestone Goal:** Transform the PriceLabs integration into a dedicated OpenClaw agent with its own workspace brain, identity, messaging channels, and permanent cron jobs -- a first-class peer in the multi-agent ecosystem. Entirely config + markdown; zero new TypeScript code.
 
 - [x] **Phase 11: Workspace Brain** -- Author all workspace files and migrate skills to agent-scoped format (completed 2026-02-27)
-- [ ] **Phase 12: Agent Registration** -- Register agent in openclaw.json with sandbox, tools, and auth profiles
+- [x] **Phase 12: Agent Registration** -- Register agent in openclaw.json with sandbox, tools, and auth profiles (completed 2026-02-27)
 - [ ] **Phase 13: Channel Routing** -- Migrate Telegram to multi-account, create dedicated bot and Slack channel, bind routing
 - [ ] **Phase 14: Permanent Cron Jobs** -- Register 4 permanent cron jobs targeting dedicated agent and channels
 - [ ] **Phase 15: End-to-End Validation** -- Full routing test matrix, main agent regression, workspace cleanup
@@ -136,11 +136,11 @@ Plans:
 | 9. OpenClaw Deployment | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 10. Messaging Integration | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 11. Workspace Brain | 2/2 | Complete    | 2026-02-27 | - |
-| 12. Agent Registration | v1.2 | 0/2 | Planned | - |
+| 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 13. Channel Routing | v1.2 | 0/? | Not started | - |
 | 14. Permanent Cron Jobs | v1.2 | 0/? | Not started | - |
 | 15. End-to-End Validation | v1.2 | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-26 -- v1.2 phases 11-15 added*
+*Last updated: 2026-02-27 -- Phase 12 Agent Registration complete*

@@ -4,22 +4,22 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 11 (Workspace Brain)
+**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 12 (Agent Registration) COMPLETE
 
 ## Current Position
 
 **Milestone:** v1.2 Agent Identity & Production Setup
-**Phase:** 11 of 15 (Workspace Brain)
+**Phase:** 12 of 15 (Agent Registration)
 **Plan:** 2 of 2 in current phase (PHASE COMPLETE)
-**Status:** Milestone complete
-**Last activity:** 2026-02-27 -- Completed 11-02 (BOOT/MEMORY/Skills Migration)
+**Status:** Phase complete
+**Last activity:** 2026-02-27 -- Completed 12-02 (Sandbox/Persona/Data Verification)
 
-Progress: [███████████████████.] 69% (33/33 plans v1.0+v1.1, 2/2 plans v1.2 phase 11)
+Progress: [████████████████████] 74% (33/33 plans v1.0+v1.1, 4/4 plans v1.2 phases 11-12)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
+- Total plans completed: 35
 - Plans failed: 0
 - Average duration: ~6.6 min/plan (automated), ~3h for live testing
 - Total execution time: ~7 hours across both milestones
@@ -53,6 +53,10 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [11-02] BOOT.md at 253 chars -- concise 5-step startup checklist
 - [11-02] MEMORY.md uses comment placeholder for API-populated listing data
 - [11-02] All 4 skills migrated to skills/<name>/SKILL.md with user-invocable: false
+- [12-01] Per-agent `mcp` block rejected by gateway -- plugin is global, handles MCP spawning automatically
+- [12-01] Agent entry uses 7 keys: id, name, workspace, model, identity, sandbox, tools (no agentDir)
+- [12-02] Plugin config restored from .save backup (stripped during Feb 27 recovery)
+- [12-02] API key set in plugins.entries.pricelabs.config.apiKey (user provided manually)
 
 ### Accumulated TODOs
 
@@ -66,10 +70,10 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-27T08:22:06.571Z
-**Stopped At:** Phase 12 context gathered
-**Next Action:** Plan or execute Phase 12 (Agent Registration)
-**Resume file:** .planning/phases/12-agent-registration/12-CONTEXT.md
+**Last Session:** 2026-02-27
+**Stopped At:** Phase 12 complete
+**Next Action:** Plan Phase 13 (Channel Routing)
+**Resume file:** .planning/ROADMAP.md
 
 ---
 *State initialized: 2026-02-22*
