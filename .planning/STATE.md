@@ -4,25 +4,25 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 15 (End-to-End Validation) IN PROGRESS
+**Current Focus:** v1.2 Agent Identity & Production Setup -- COMPLETE
 
 ## Current Position
 
-**Milestone:** v1.2 Agent Identity & Production Setup
-**Phase:** 15 of 15 (End-to-End Validation) -- IN PROGRESS
-**Plan:** 1 of 2 in current phase (15-01 complete)
-**Status:** Phase 15 Plan 01 complete (pre-flight + workspace separation), Plan 02 pending
-**Last activity:** 2026-02-28 -- Completed 15-01 (Pre-flight Checks + Workspace Separation)
+**Milestone:** v1.2 Agent Identity & Production Setup -- COMPLETE
+**Phase:** 15 of 15 (End-to-End Validation) -- COMPLETE
+**Plan:** 2 of 2 in current phase (all complete)
+**Status:** v1.2 milestone complete -- all phases (11-15) delivered, E2E validation passed, user sign-off granted
+**Last activity:** 2026-02-28 -- Completed 15-02 (Full E2E Validation + v1.2 Milestone Sign-off)
 
-Progress: [██████████████████████████] 93% (33/33 plans v1.0+v1.1, 9/10 plans v1.2 phases 11-15)
+Progress: [████████████████████████████] 100% (33/33 plans v1.0+v1.1, 10/10 plans v1.2 phases 11-15)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40
+- Total plans completed: 41
 - Plans failed: 0
 - Average duration: ~6.6 min/plan (automated), ~3h for live testing
-- Total execution time: ~7 hours across both milestones
+- Total execution time: ~7.25 hours across both milestones
 
 **By Phase (v1.0):**
 
@@ -40,6 +40,8 @@ Progress: [███████████████████████
 | Phase 14 P01 | 7min | 2 tasks | 1 files |
 | Phase 14 P02 | 18min | 2 tasks | 0 files |
 | Phase 15 P01 | 2min | 2 tasks | 0 files |
+| Phase 15 P02 | 15min | 2 tasks | 0 files |
+| Phase 15 P02 | 15min | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,9 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [15-01] All 12 CLI verification checks pass -- no configuration drift from Phases 11-14
 - [15-01] E2E-04 satisfied: workspace separation confirmed across 7 dimensions without removing AlBot's pricelabs-skills
 - [15-01] Session store CLI syntax is `openclaw sessions --agent <id>` (not `openclaw sessions list --agent <id>`)
+- [15-02] Used `openclaw agent --deliver` for routing tests -- sends through full agent pipeline with delivery to target channel
+- [15-02] AlBot sandbox blocks pricelabs_* tools while pricelabs-skills knowledge files remain -- dual-layer isolation (sandbox for tools, workspace for knowledge)
+- [15-02] v1.2 milestone sign-off: 8/8 routing pass, 0 cross-talk, cron delivered, AlBot regression clean
 
 ### Accumulated TODOs
 
@@ -89,11 +94,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-28T21:15:36Z
-**Stopped At:** Completed 15-01-PLAN.md (Pre-flight Checks + Workspace Separation)
-**Next Action:** Execute 15-02-PLAN.md (Full routing matrix, cron re-verification, main agent regression, human sign-off)
-**Resume file:** .planning/phases/15-end-to-end-validation/15-01-SUMMARY.md
+**Last Session:** 2026-02-28T21:41:55.942Z
+**Stopped At:** Completed 15-02-PLAN.md -- v1.2 milestone COMPLETE
+**Next Action:** v1.2 milestone complete. No further phases planned. System is in production.
+**Resume file:** None
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-28 -- Phase 15 Plan 01 complete (Pre-flight + Workspace Separation)*
+*Last updated: 2026-02-28 -- v1.2 MILESTONE COMPLETE -- Phase 15 Plan 02 (E2E Validation + Sign-off)*

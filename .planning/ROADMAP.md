@@ -46,7 +46,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full phase details.
 - [x] **Phase 12: Agent Registration** -- Register agent in openclaw.json with sandbox, tools, and auth profiles (completed 2026-02-27)
 - [x] **Phase 13: Channel Routing** -- Migrate Telegram to multi-account, create dedicated bot and Slack channel, bind routing (completed 2026-02-27)
 - [x] **Phase 14: Permanent Cron Jobs** -- Register 4 permanent cron jobs targeting dedicated agent and channels (completed 2026-02-28)
-- [ ] **Phase 15: End-to-End Validation** -- Full routing test matrix, main agent regression, workspace cleanup
+- [x] **Phase 15: End-to-End Validation** -- Full routing test matrix, main agent regression, workspace cleanup (completed 2026-02-28)
 
 ## Phase Details
 
@@ -127,7 +127,7 @@ Plans:
   2. Cron deliveries arrive in correct dedicated channels -- health summaries and optimization reports never appear in main agent channels
   3. Main agent functionality unaffected -- existing cron jobs, Slack channels, Telegram bot, and skills all work normally
   4. PriceLabs skill files removed from main agent workspace (`~/.openclaw/workspace/pricelabs-skills/` cleaned up), completing full agent separation
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 15-01-PLAN.md -- Pre-flight CLI checks and workspace separation verification (E2E-04)
@@ -151,8 +151,8 @@ Plans:
 | 12. Agent Registration | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 13. Channel Routing | v1.2 | 2/2 | Complete | 2026-02-27 |
 | 14. Permanent Cron Jobs | v1.2 | 2/2 | Complete | 2026-02-28 |
-| 15. End-to-End Validation | v1.2 | 1/2 | In progress | - |
+| 15. End-to-End Validation | v1.2 | 2/2 | Complete | 2026-02-28 |
 
 ---
 *Roadmap created: 2026-02-22*
-*Last updated: 2026-02-28 -- Phase 15 Plan 01 complete (Pre-flight + Workspace Separation)*
+*Last updated: 2026-02-28 -- v1.2 MILESTONE COMPLETE -- Phase 15 Plan 02 (E2E Validation + Sign-off)*
