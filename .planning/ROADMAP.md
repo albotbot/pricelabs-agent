@@ -96,7 +96,11 @@ Plans:
   3. Messages sent to the existing main Telegram bot continue routing to the main agent (no disruption)
   4. Messages in the dedicated #pricelabs Slack channel route to the pricelabs agent
   5. Messages in existing Slack channels continue routing to the main agent (no cross-talk)
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 13-01-PLAN.md -- Migrate Telegram to multi-account format and add Prism bot with routing binding
+- [ ] 13-02-PLAN.md -- Add #pricelabs Slack channel to allowlist with peer-channel binding, verify full routing matrix
 
 ### Phase 14: Permanent Cron Jobs
 **Goal**: Four permanent cron jobs deliver daily health summaries and weekly optimization reports to dedicated PriceLabs channels via the PriceLabs agent
