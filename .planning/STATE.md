@@ -4,22 +4,22 @@
 
 **Core Value:** Reliably monitor portfolio health and surface actionable pricing recommendations via messaging -- never making a pricing change without explicit owner approval.
 
-**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 12 (Agent Registration) COMPLETE
+**Current Focus:** v1.2 Agent Identity & Production Setup -- Phase 13 (Channel Routing) Plan 01 COMPLETE
 
 ## Current Position
 
 **Milestone:** v1.2 Agent Identity & Production Setup
-**Phase:** 12 of 15 (Agent Registration)
-**Plan:** 2 of 2 in current phase (PHASE COMPLETE)
-**Status:** Phase complete
-**Last activity:** 2026-02-27 -- Completed 12-02 (Sandbox/Persona/Data Verification)
+**Phase:** 13 of 15 (Channel Routing)
+**Plan:** 1 of 2 in current phase
+**Status:** In progress
+**Last activity:** 2026-02-28 -- Completed 13-01 (Telegram Multi-Account Migration)
 
-Progress: [████████████████████] 74% (33/33 plans v1.0+v1.1, 4/4 plans v1.2 phases 11-12)
+Progress: [█████████████████████] 77% (33/33 plans v1.0+v1.1, 5/6 plans v1.2 phases 11-13)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 35
+- Total plans completed: 36
 - Plans failed: 0
 - Average duration: ~6.6 min/plan (automated), ~3h for live testing
 - Total execution time: ~7 hours across both milestones
@@ -35,6 +35,7 @@ Progress: [████████████████████] 74% (33
 | 05 | 3 | 17min | 5.7min |
 | Phase 11 P01 | 10min | 2 tasks | 6 files |
 | Phase 11 P02 | 15min | 2 tasks | 6 files |
+| Phase 13 P01 | 57min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -57,6 +58,9 @@ Recent decisions affecting current work (full log in PROJECT.md):
 - [12-01] Agent entry uses 7 keys: id, name, workspace, model, identity, sandbox, tools (no agentDir)
 - [12-02] Plugin config restored from .save backup (stripped during Feb 27 recovery)
 - [12-02] API key set in plugins.entries.pricelabs.config.apiKey (user provided manually)
+- [13-01] Two-phase Telegram migration: restructure to multi-account first, verify AlBot, then add Prism bot
+- [13-01] dmPolicy set explicitly per-account (not relying on top-level inheritance) for safety
+- [13-01] Kept per-channel-peer dmScope -- binding already isolates agents by agentId
 
 ### Accumulated TODOs
 
@@ -70,11 +74,11 @@ Recent decisions affecting current work (full log in PROJECT.md):
 
 ## Session Continuity
 
-**Last Session:** 2026-02-28T03:00:52.610Z
-**Stopped At:** Phase 13 context gathered
-**Next Action:** Plan Phase 13 (Channel Routing)
-**Resume file:** .planning/phases/13-channel-routing/13-CONTEXT.md
+**Last Session:** 2026-02-28T04:37:56.058Z
+**Stopped At:** Completed 13-01-PLAN.md
+**Next Action:** Execute 13-02-PLAN.md (Slack Channel Routing)
+**Resume file:** None
 
 ---
 *State initialized: 2026-02-22*
-*Last updated: 2026-02-27 -- Phase 11 Workspace Brain complete (2/2 plans)*
+*Last updated: 2026-02-28 -- Phase 13 Plan 01 complete (Telegram multi-account migration)*
