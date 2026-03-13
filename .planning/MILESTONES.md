@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.2 Agent Identity & Production Setup (Shipped: 2026-02-28)
+
+**Phases completed:** 5 phases (11-15), 10 plans, 29 requirements delivered
+**Code:** Zero new TypeScript — entirely config + markdown (workspace files, agent registration, channel bindings, cron jobs)
+**Timeline:** 2 days (2026-02-26 → 2026-02-28), 46 commits, 0 plan failures
+
+**Key accomplishments:**
+1. Authored complete Prism workspace brain — 7 bootstrap files (AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, BOOT.md, MEMORY.md) + 4 skills under 2K token budget
+2. Registered pricelabs agent in OpenClaw with dedicated sandbox (pricelabs_* allow), auth profiles, and all 28 MCP tools visible
+3. Migrated Telegram from flat botToken to multi-account format — zero-downtime two-phase migration, added dedicated @Prism_Price_Bot
+4. Set up Slack peer-channel routing for #pricelabs channel with requireMention: false for clean UX
+5. Registered 4 permanent cron jobs targeting pricelabs agent — daily health summaries + weekly optimization reports to both Slack and Telegram
+6. Full E2E validation with routing test matrix, cron delivery verification, main agent regression, and complete workspace separation across 7 dimensions
+
+---
+
 ## v1.0 MVP (Shipped: 2026-02-25)
 
 **Phases completed:** 5 phases, 24 plans, 43 requirements delivered

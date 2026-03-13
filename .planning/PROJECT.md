@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An AI-powered revenue management agent that runs on OpenClaw, connecting to PriceLabs' API to monitor short-term rental portfolios, provide interactive analytics via Slack and Telegram, and optimize pricing with human-in-the-loop approval. It acts as a 24/7 revenue manager — detecting underperformance, recommending pricing changes, executing approved changes, and tracking their impact over time. Fully validated end-to-end with real API data, live messaging delivery, and automated safety gates.
+A dedicated OpenClaw agent ("Prism") that connects to PriceLabs' API to monitor short-term rental portfolios, provide interactive analytics via Slack and Telegram, and optimize pricing with human-in-the-loop approval. Prism is a first-class peer in the multi-agent ecosystem with its own workspace brain, persona, messaging channels, and permanent cron jobs. It acts as a 24/7 revenue manager — detecting underperformance, recommending pricing changes, executing approved changes, and tracking their impact over time.
 
 ## Core Value
 
@@ -34,25 +34,25 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 - ✓ Slack and Telegram deliver health summaries, answer questions, and handle approval flow with live data — v1.1
 - ✓ Write safety gate (PRICELABS_WRITES_ENABLED=false) blocks all pricing changes by default — v1.1
 - ✓ OpenClaw plugin bridge registers all 28 MCP tools in the agent's tool namespace — v1.1
+- ✓ Prism workspace brain authored with 7 bootstrap files + 4 skills under 2K token budget — v1.2
+- ✓ Agent registered in OpenClaw with dedicated sandbox, auth profiles, and 28 MCP tools — v1.2
+- ✓ Telegram migrated to multi-account format with dedicated Prism bot and routing bindings — v1.2
+- ✓ Slack peer-channel routing set up for dedicated #pricelabs channel — v1.2
+- ✓ 4 permanent cron jobs delivering daily health + weekly optimization to dedicated channels — v1.2
+- ✓ Full E2E validation with zero cross-talk and complete workspace separation — v1.2
 
 ### Active
 
-**Current Milestone: v1.2 Agent Identity & Production Setup**
+(None yet — planning next milestone)
 
-**Goal:** Transform the PriceLabs integration into a proper dedicated OpenClaw agent with its own identity, workspace brain, dedicated messaging channels, and permanent cron jobs — making it a first-class peer in the SSS multi-agent ecosystem.
-
-**Target features:**
-- Dedicated agent workspace (AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, MEMORY.md, HEARTBEAT.md, BOOT.md, BOOTSTRAP.md, skills/)
-- Multi-agent routing (separate Telegram bot, dedicated #pricelabs Slack channel, bindings)
-- Permanent cron jobs (daily health + weekly optimization targeting dedicated channels)
-- End-to-end validation (agent responds independently, cron delivers, no cross-talk)
-
-**Deferred to v2.0:**
+### Deferred to v2.0
 
 - [ ] Multi-user support for scaling to other hosts/PMs (MULTI-01..03)
 - [ ] Auto-approval for low-risk changes below user-defined thresholds (AUTO-01)
 - [ ] Seasonal profile management via agent (AUTO-02)
 - [ ] Monthly strategy report with portfolio-level KPI forecasting (AUTO-03)
+- [ ] Interactive button-based approval (replace reply-text) (UX-01)
+- [ ] Per-agent model selection (cheaper for cron, premium for interactive) (UX-02)
 
 ### Out of Scope
 
@@ -66,33 +66,32 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 
 ## Context
 
-### Current State (v1.1 shipped 2026-02-26)
+### Current State (v1.2 shipped 2026-02-28)
 
-**Tech Stack:** TypeScript MCP server (28 tools), SQLite persistence (7 tables), OpenClaw skills (4), OpenClaw plugin bridge, cron jobs (4), validation scripts (5)
+**Tech Stack:** TypeScript MCP server (28 tools), SQLite persistence (7 tables), OpenClaw Prism agent (dedicated workspace, 7 bootstrap files, 4 skills), OpenClaw plugin bridge, permanent cron jobs (4), validation scripts (5)
 
-**Code:** ~6,400 TypeScript LOC (MCP server) + 2,565 lines OpenClaw config/plugin + 3,327 lines validation scripts + 1,343 lines skill protocols
+**Code:** ~6,469 TypeScript LOC (MCP server) + OpenClaw config/plugin + validation scripts + workspace files
 
 **Architecture:**
 - MCP server (`mcp-servers/pricelabs/`) — API client, rate limiter, cache, 28 tools across 14 registration functions
 - OpenClaw plugin (`openclaw/extensions/pricelabs/`) — bridges all 28 MCP tools into OpenClaw via stdio JSON-RPC
-- Skills (`openclaw/skills/`) — domain knowledge, monitoring protocols, analysis playbook, optimization playbook (9 sections)
-- OpenClaw config (`openclaw/`) — gateway security, cron jobs (2 daily health, 2 weekly optimization), env config
+- Prism workspace (`~/.openclaw/workspace-pricelabs/`) — AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, BOOT.md, MEMORY.md + 4 skills
+- OpenClaw config (`openclaw/`) — gateway security, agent registration, channel bindings, cron jobs
 - SQLite — listing_snapshots, price_snapshots, reservations, market_snapshots, audit_log, change_tracking, user_config
 - Validation (`scripts/`) — boot, API, persistence, deployment, messaging validation scripts
 
 **Deployment:**
-- OpenClaw gateway running with PriceLabs plugin loaded (28 tools registered)
-- Slack + Telegram channels connected and delivering
-- Cron jobs registered and firing (health summaries delivered to both channels)
+- Prism agent registered in OpenClaw with dedicated sandbox, auth profiles, and 28 MCP tools
+- Dedicated Telegram bot (@Prism_Price_Bot) and #pricelabs Slack channel with routing bindings
+- 4 permanent cron jobs: daily health + weekly optimization to both Slack and Telegram
+- Multi-agent system with zero cross-talk between Prism and main agent (AlBot)
 - Write safety gate active (PRICELABS_WRITES_ENABLED=false)
 
 **Known issues / tech debt:**
 - OpenClaw cron skip bug #17852 may affect scheduled job reliability
-- Reply-based approval UX (v1) — could be improved with interactive buttons in future
+- Reply-based approval UX — could be improved with interactive buttons in future (UX-01)
 - PriceLabs reservation_data pagination limits not tested with real large datasets
 - Global-only thresholds in detect_underperformers batch query (per-listing thresholds via config tool only)
-- Permanent cron jobs (daily health, weekly optimization) not yet registered in OpenClaw — only tested with one-shot jobs
-- Telegram cron delivery requires explicit --to <chatId> (unlike Slack which auto-resolves)
 
 ### PriceLabs API (Customer API)
 - Base URL: `https://api.pricelabs.co`
@@ -147,6 +146,12 @@ The agent must reliably monitor portfolio health and surface actionable pricing 
 | OpenClaw plugin bridge over native MCP | OpenClaw doesn't have native mcp.servers config; plugin system required | ✓ Good — all 28 tools registered via stdio JSON-RPC |
 | Sandbox tool allow glob (pricelabs_*) | OpenClaw sandbox.mode="all" hardcodes 13 core tools only | ✓ Good — explicit glob pattern in config |
 | One-shot cron for delivery testing | Verifiable, auto-deleting test jobs vs permanent cron | ✓ Good — clean testing pattern |
+| Dedicated Prism workspace brain | Agent needs distinct persona, tools ref, and domain skills | ✓ Good — 7 files under 2K token budget |
+| Telegram multi-account migration | Flat config can't route to multiple agents | ✓ Good — two-phase migration, zero downtime |
+| Slack peer-channel routing | Separate channel per agent, no cross-talk | ✓ Good — requireMention: false for clean UX |
+| Permanent cron jobs with --agent flag | One-shot was only for testing; production needs persistent jobs | ✓ Good — 4 jobs survive gateway restarts |
+| Zero new TypeScript for v1.2 | v1.2 is entirely config + markdown — proves agent identity is purely declarative | ✓ Good — separation of concerns |
+| AlBot retains PriceLabs skills | User decided main agent should keep read access to PriceLabs data | ✓ Good — flexible routing |
 
 ---
-*Last updated: 2026-02-26 after v1.2 milestone start*
+*Last updated: 2026-03-12 after v1.2 milestone completion*
