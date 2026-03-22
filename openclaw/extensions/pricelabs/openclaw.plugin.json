@@ -35,7 +35,7 @@
   "uiHints": {
     "serverPath": {
       "label": "Server Path",
-      "placeholder": "/mnt/c/Projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js"
+      "placeholder": "/home/NGA/projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js"
     },
     "apiKey": {
       "label": "PriceLabs API Key",

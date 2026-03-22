@@ -34,7 +34,7 @@ const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) 
 function getConfig(api: PluginApi) {
   const entries = api.config?.plugins?.entries?.pricelabs?.config || {};
   return {
-    serverPath: entries.serverPath || resolve("/mnt/c/Projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js"),
+    serverPath: entries.serverPath || resolve("/home/NGA/projects/pricelabs-agent/mcp-servers/pricelabs/dist/index.js"),
     apiKey: entries.apiKey || process.env.PRICELABS_API_KEY || "",
     dbPath: entries.dbPath || "/home/NGA/.pricelabs-agent/data.sqlite",
     baseUrl: entries.baseUrl || "https://api.pricelabs.co",
